@@ -1,0 +1,20 @@
+{
+  "name": "cozy-isle-payback",
+  "version": "1.0.0",
+  "description": "暖島清算日：南瓜員工紓壓用第一人稱追殺遊戲",
+  "main": "index.js",
+  "scripts": {
+    "build": "esbuild src/main.js --bundle --format=iife --minify --target=es2020 --outfile=dist/game.js",
+    "dev": "esbuild src/main.js --bundle --format=iife --sourcemap --target=es2020 --outfile=dist/game.js",
+    "assets": "python tools/build_assets.py"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "esbuild": "^0.28.2",
+    "three": "^0.187.0"
+  },
+  "private": true
+}
