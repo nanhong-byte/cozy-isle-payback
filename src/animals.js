@@ -31,7 +31,7 @@ export const DEFS = {
 const PANIC = ['不要啊啊啊！', '我只是照流程走！', '有話好說！', '我下次不敢了！', '這不在我的職責範圍！', '我要報加班！', '我還有三張單沒結！', '救命啊人資！', '我明天請假！'];
 export const DEATH_TEXT = {
   slice: '被一刀兩斷', flat: '被拍成肉餅', launch: '飛去當星星了', gib: '炸成絞肉', burn: '烤到全熟', headpop: '腦袋搬家',
-  hole: '被黑洞回收', zap: '被雷公點名', wall: '黏在牆上', splat: '摔成一攤', drop: '永久下班', drown: '去餵鯊魚了', mega: '轟然倒下',
+  hole: '被黑洞回收', zap: '被雷公點名', ice: '碎成冰塊', wall: '黏在牆上', splat: '摔成一攤', drop: '永久下班', drown: '去餵鯊魚了', mega: '轟然倒下',
 };
 
 const T = {};          // 模型樣板
@@ -115,6 +115,18 @@ function dispose(a) {
   G.scene.remove(a.root); a.mixer.stopAllAction(); a.mixer.uncacheRoot(a.model); a.mat.dispose();
   if (a.extra) a.extra.forEach((e) => { G.scene.remove(e.obj); if (e.mat) e.mat.dispose(); });
 }
+// 給召喚物用的身體（喪屍島民）：不進 G.animals，由呼叫者自己管
+export function makeBody(key, tint) {
+  const def = DEFS[key], tp = T[key], H = def.size, model = SkeletonUtils.clone(tp.scene);
+  model.scale.setScalar(H / tp.h);
+  const mat = new THREE.MeshLambertMaterial({ map: tp.map, side: THREE.DoubleSide, color: tint });
+  model.traverse((c) => { if (c.isMesh) { c.material = mat; c.frustumCulled = false; } });
+  const root = new THREE.Group(); root.add(model);
+  const mixer = new THREE.AnimationMixer(model), clip = tp.clips.find((c) => c.name === 'walk') || tp.clips[0];
+  mixer.clipAction(clip).play();
+  return { root, model, mat, mixer, H };
+}
+export function freeBody(b) { G.scene.remove(b.root); b.mixer.stopAllAction(); b.mixer.uncacheRoot(b.model); b.mat.dispose(); }
 export function clearAnimals() {
   for (const a of G.animals) { a.dead = true; dispose(a); }
   G.animals.length = 0;
@@ -271,6 +283,7 @@ export function updateAnimals(dt) {
 // ── 受傷與擊殺 ──
 export function damage(a, amt, info = {}) {
   if (a.dead) return false;
+  if (a.ice > 0) { if (info.weapon) a.lastWeapon = info.weapon; kill(a, info); return true; } // 冰雕一碰就碎
   if (a.boss) amt = Math.min(amt, info.bossCap || 300);
   a.hp -= amt; a.flash = 0.1; if (info.weapon) a.lastWeapon = info.weapon;
   if (a.hp <= 0) { kill(a, info); return true; }
@@ -291,7 +304,7 @@ export function kill(a, info = {}) {
   const i = G.animals.indexOf(a); if (i >= 0) G.animals.splice(i, 1);
   cutChute(a); a.root.rotation.z = 0;
   let mode = info.mode || 'drop';
-  if (a.boss) mode = 'mega';
+  if (a.boss) mode = 'mega'; else if (a.ice > 0) mode = 'ice';
   const p = a.root.position;
   info.air = !a.def.fly && p.y > 1.3;
   if (G.onKill) G.onKill(a, mode, info);
@@ -488,6 +501,13 @@ const DEATH = {
       },
       end() { dispose(a); },
     });
+  },
+  ice(a) { // 冰雕碎一地
+    const p = a.root.position, cy = p.y + a.H * 0.5, k = a.H / 1.5;
+    for (let i = 0; i < 16; i++) FX.scrap.spawn(p.x + rand(-0.3, 0.3), cy + rand(-0.5, 0.5), p.z + rand(-0.3, 0.3), rand(-7, 7), rand(3, 10), rand(-7, 7), rand(0.18, 0.4) * k, rand(4, 7), pick([0xBFEAFF, 0x9FD8F0, 0xE6F7FF]));
+    for (let i = 0; i < 6; i++) FX.meat.spawn(p.x, cy, p.z, rand(-5, 5), rand(3, 9), rand(-5, 5), rand(0.14, 0.3) * k, rand(4, 7), pick(MEAT));
+    for (let i = 0; i < 8; i++) FX.puffs.spawn(p.x, cy, p.z, rand(-3, 3), rand(0, 3), rand(-3, 3), 0.3, rand(0.8, 1.4), rand(0.4, 0.7), 0xF4FAFA, 0xBFEAFF, 0.5, 2);
+    FX.decals.add(p.x, p.z, rand(1.6, 2.4) * k, 0xBFE3EE); S.ice(); dispose(a);
   },
   zap(a) { // 雷劈：僵直狂閃 → 焦炭 → 碎成灰
     const p = a.root.position; let t = 0, ash = false;

@@ -7,6 +7,7 @@ import { kill, damage } from './animals.js';
 import { explode, explodeBarrel } from './weapons.js';
 import { strike, skyFlash } from './weather.js';
 import { UI } from './ui.js';
+import { POWERS, initPowers, startPower, endPower, updatePowers, resetPowers } from './powers.js';
 
 export const ITEMS = [
   { id: 'giant', icon: '🍄', name: '升官蘑菇', tip: '變成巨人，用踩的', dur: 14, w: 3 },
@@ -18,6 +19,7 @@ export const ITEMS = [
   { id: 'bighead', icon: '🤯', name: '大頭症', tip: '頭變超大，隨便打都爆頭', dur: 16, w: 3 },
   { id: 'balloon', icon: '🎈', name: '氦氣彈', tip: '全員升天，然後啵', dur: 6, w: 3 },
   { id: 'nuke', icon: '☢️', name: '全島資遣令', tip: '3 秒後生效', dur: 3, w: 1.2 },
+  ...POWERS,
 ];
 G.itemDefs = {}; ITEMS.forEach((it) => (G.itemDefs[it.id] = it));
 
@@ -39,6 +41,7 @@ export function initItems() {
   beamMat = new THREE.MeshBasicMaterial({ color: 0xF2C94C, transparent: true, opacity: 0.2, depthWrite: false, fog: false, side: THREE.DoubleSide });
   rockGeo = new THREE.IcosahedronGeometry(0.9, 0); rockMat = new THREE.MeshLambertMaterial({ color: 0x3A322A, emissive: 0xC24A12, flatShading: true });
   pumpGeo = new THREE.SphereGeometry(0.8, 10, 8).scale(1, 0.82, 1); pumpMat = new THREE.MeshLambertMaterial({ color: 0xE08A2E, flatShading: true });
+  initPowers();
 }
 
 function spawnCrate(x, z, o = {}) {
@@ -62,7 +65,8 @@ export function resetItems() {
   while (crates.length) removeCrate(0);
   rocks.forEach((r) => G.scene.remove(r.m)); rocks.length = 0;
   for (const k in G.buff) delete G.buff[k];
-  G.eyeK = 1; dropT = 15; goldT = 18; zeusT = 0; metT = 0; stompT = 0; statueHits = 0; statueCd = 0; lastItem = '';
+  resetPowers(); G.ult = 0;
+  G.eyeK = 1; dropT = 12; goldT = 18; zeusT = 0; metT = 0; stompT = 0; statueHits = 0; statueCd = 0; lastItem = '';
   document.getElementById('vignette').classList.remove('frozen');
 }
 // 開局：在三間房子的背面各藏一箱（沒有光柱，要自己繞過去找）
@@ -89,10 +93,12 @@ export function give(id) {
     }
     S.whoosh();
   }
+  startPower(it.id);
   if (it.id === 'stop') { A.tempo = 0.55; document.getElementById('vignette').classList.add('frozen'); }
   return it;
 }
 function endBuff(id) {
+  endPower(id);
   if (id === 'nuke') nuke();
   else if (id === 'stop') { A.tempo = G.rageOn > 0 ? 1.3 : 1; document.getElementById('vignette').classList.remove('frozen'); UI.announce('時間恢復', '剛剛砍的現在一起倒'); S.rage(); }
   else if (id === 'bighead') { for (const a of G.animals) if (a.bones.head) a.bones.head.scale.setScalar(1); }
@@ -143,12 +149,13 @@ export function itemOnKill(a) {
 export function updateItems(dt, wdt) {
   const P = G.player, B = G.buff, pp = P.pos;
   for (const id in B) { B[id] -= dt; if (B[id] <= 0) { delete B[id]; endBuff(id); } }
-  G.eyeK += ((B.giant > 0 ? 2.3 : 1) - G.eyeK) * Math.min(1, dt * 5);
+  updatePowers(dt, wdt);
+  G.eyeK += ((B.giant > 0 ? 2.3 : B.beast > 0 ? 1.5 : 1) - G.eyeK) * Math.min(1, dt * 5);
   if (B.nuke > 0) { const n = Math.ceil(B.nuke * 2); if (n !== tickN) { tickN = n; S.tick(); } }
 
   // 禮物箱：定時空投＋撿取
   dropT -= wdt;
-  if (dropT <= 0) { dropT = rand(20, 28); if (crates.length < 5) { const [x, z] = clearSpot(10, 38); spawnCrate(x, z, { sky: true, beam: true }); UI.feed('🎁 <b>神秘禮物箱</b>空投中，跟著光柱走'); } }
+  if (dropT <= 0) { dropT = rand(13, 19); if (crates.length < 6) { const [x, z] = clearSpot(10, 38); spawnCrate(x, z, { sky: true, beam: true }); UI.feed('🎁 <b>神秘禮物箱</b>空投中，跟著光柱走'); } }
   for (let i = crates.length - 1; i >= 0; i--) {
     const c = crates[i]; c.t += dt;
     if (c.fall) { c.y -= 11 * wdt; if (c.y <= 0) { c.y = 0; c.fall = false; dust(c.x, 0, c.z, 6, 0.8); S.thud(); } }

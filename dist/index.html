@@ -69,6 +69,15 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
 #rage .bar i{display:block;height:100%;background:var(--alert)}
 #rage em{font-style:normal;float:right;color:#B4C494;font-size:14px}
 #rage.ready{border-color:#E5B32C;box-shadow:0 0 0 2.5px var(--gold),var(--shadow)} #rage.ready em{color:var(--gold)}
+#ult{position:absolute;left:20px;bottom:96px;padding:10px 18px 12px;width:250px;font-size:16px}
+#ult .bar{height:13px;background:#546638;border-radius:7px;overflow:hidden;margin-top:7px} #ult .bar i{display:block;height:100%;background:var(--matcha-deep)}
+#ult em{font-style:normal;float:right;color:#B4C494;font-size:14px}
+#ult.ready{border-color:#E5B32C;box-shadow:0 0 0 2.5px var(--gold),var(--shadow)} #ult.ready em{color:var(--gold)}
+#picker .card{max-width:1040px;padding:22px 26px} #picker h1{font-size:34px}
+#pgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:14px}
+#pgrid button{background:var(--paper-warm);border:2.5px solid #2E2A1F;border-radius:12px;padding:7px 4px 8px;font-family:inherit;font-weight:800;font-size:15px;color:#17130A;cursor:pointer;box-shadow:0 3px 0 rgba(40,60,30,.25);line-height:1.3}
+#pgrid button:hover{transform:translateY(-2px)} #pgrid button:active{transform:translateY(2px);box-shadow:none}
+#pgrid button b{display:block;font-size:24px} #pgrid button small{display:block;font-size:11px;font-weight:700;color:var(--text-soft);pointer-events:none}
 #boss{position:absolute;left:50%;top:86px;transform:translateX(-50%);width:460px;padding:9px 18px 12px;font-size:17px;text-align:center}
 #boss .bar i{display:block;height:100%;background:var(--alert)}
 #vignette{position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 0 0 rgba(200,72,58,0);transition:box-shadow .3s}
@@ -137,6 +146,7 @@ kbd{display:inline-block;background:var(--wheat);border:2.5px solid #2E2A1F;bord
   <div id="combo" class="hidden"><div id="combo-n"></div><div id="combo-x"></div><div id="combo-bar"><i></i></div></div>
   <div id="announce"></div>
   <div id="crosshair"><b></b><i></i></div>
+  <div id="ult" class="panel">絕招<em>殺敵累積</em><div class="bar"><i></i></div></div>
   <div id="rage" class="panel">暴怒<em>殺越多集越快</em><div class="bar"><i></i></div></div>
   <div id="wname"><b></b><small></small></div>
   <div id="weapons" class="panel"></div>
@@ -155,8 +165,8 @@ kbd{display:inline-block;background:var(--wheat);border:2.5px solid #2E2A1F;bord
   </div>
   <div class="grid" id="wgrid"></div>
   <p class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>移動　<kbd>Shift</kbd>衝刺　<kbd>空白</kbd>跳　<kbd>左鍵</kbd>攻擊　<kbd>右鍵</kbd>踢飛<br>
-  <kbd>1</kbd>–<kbd>0</kbd>或<kbd>滾輪</kbd>換武器　<kbd>Q</kbd>暴怒模式　<kbd>C</kbd>慘叫開關　<kbd>M</kbd>靜音　<kbd>Esc</kbd>暫停</p>
-  <p class="note">🎁 島上藏著神秘禮物箱，撿到會有驚喜；打久了會變天下雨。還有幾個彩蛋，自己找。</p>
+  <kbd>1</kbd>–<kbd>0</kbd>或<kbd>滾輪</kbd>換武器　<kbd>Q</kbd>暴怒模式　<kbd>F</kbd>抽絕招　<kbd>Tab</kbd>絕招選單（無限發洩）　<kbd>C</kbd>慘叫開關　<kbd>M</kbd>靜音　<kbd>Esc</kbd>暫停</p>
+  <p class="note">🎁 島上藏著神秘禮物箱，共 27 種絕招：變身、跑車、氣功波、萬劍歸一、召喚喪屍…撿到就知道。打久了會變天下雨，還有幾個彩蛋自己找。</p>
   <p class="note" id="hiscore"></p>
   <p class="note">島民全是 AI 做的 3D 模型，沒有任何動物（或同事）在製作過程中受傷。</p>
 </div></div>
@@ -164,6 +174,12 @@ kbd{display:inline-block;background:var(--wheat);border:2.5px solid #2E2A1F;bord
 <div id="pause" class="screen hidden"><div class="card">
   <h1>喘口氣</h1><p class="sub">島民正在趁機逃跑</p>
   <div class="btns"><button class="btn btn-primary" id="btn-resume">繼續清算</button><button class="btn btn-secondary" id="btn-quit">回主選單</button></div>
+</div></div>
+
+<div id="picker" class="screen hidden"><div class="card">
+  <h1>絕招選單</h1><p class="sub" style="margin:4px 0 0">無限發洩專用：想玩哪招直接點</p>
+  <div id="pgrid"></div>
+  <div class="btns" style="margin-top:14px"><button class="btn btn-secondary" id="btn-pclose">關閉（Tab）</button></div>
 </div></div>
 
 <div id="end" class="screen hidden"><div class="card">

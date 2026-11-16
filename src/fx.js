@@ -256,11 +256,11 @@ export function ring(pos, r0, r1, life, color = 0xFCF9F0) {
   r.m.position.set(pos.x, Math.max(0.08, pos.y), pos.z); r.m.material.color.set(color);
   r.m.visible = true; r.t = 0; r.life = life; r.r0 = r0; r.r1 = r1; r.m.scale.setScalar(r0);
 }
-export function tracer(a, b, color = 0xFFE58A, w = 0.035) {
+export function tracer(a, b, color = 0xFFE58A, w = 0.035, life = 0.055) {
   const t = tracers.find((x) => x.life <= 0) || tracers[0];
   const len = a.distanceTo(b);
   t.m.position.copy(a).add(b).multiplyScalar(0.5); t.m.lookAt(b); t.m.scale.set(w, w, len);
-  t.m.material.color.set(color); t.m.visible = true; t.life = 0.055;
+  t.m.material.color.set(color); t.m.visible = true; t.life = life;
 }
 // 噴血：方向 (dx,dy,dz)×speed，再加上隨機散射
 export function blood(x, y, z, dx, dy, dz, n, speed, oil = false, spread = 0.65) {

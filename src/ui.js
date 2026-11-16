@@ -18,6 +18,9 @@ UI.init = (h) => {
   $('btn-again').onclick = () => h.start(G.lastMode || 'score');
   $('btn-menu').onclick = () => h.menu();
   $('btn-wail').onclick = () => h.wail();
+  $('pgrid').innerHTML = Object.values(G.itemDefs).map((it) => `<button data-id="${it.id}"><b>${it.icon}</b>${it.name}<small>${it.tip}</small></button>`).join('');
+  $('pgrid').onclick = (e) => { const b = e.target.closest('button'); if (b) h.pick(b.dataset.id); };
+  $('btn-pclose').onclick = () => h.pick(null);
   UI.hiscore();
 };
 UI.hiscore = () => {
@@ -28,8 +31,8 @@ UI.hiscore = () => {
 UI.wail = (on) => { $('btn-wail').innerHTML = `😱 慘叫版：${on ? '開' : '關'}<small>${on ? '島民會叫得很慘' : '只有原本的小叫聲'}</small>`; $('btn-wail').classList.toggle('off', !on); };
 UI.loading = (p) => { $('loadbar').firstElementChild.style.width = Math.round(p * 100) + '%'; };
 UI.show = (name) => {
-  ['loading', 'menu', 'pause', 'end'].forEach((s) => $(s).classList.toggle('hidden', s !== name));
-  $('hud').classList.toggle('hidden', !(name === 'hud' || name === 'pause'));
+  ['loading', 'menu', 'pause', 'end', 'picker'].forEach((s) => $(s).classList.toggle('hidden', s !== name));
+  $('hud').classList.toggle('hidden', !(name === 'hud' || name === 'pause' || name === 'picker'));
 };
 UI.reset = () => { $('feed').innerHTML = ''; $('announce').innerHTML = ''; $('locks').innerHTML = ''; lockEls = []; lastCombo = 0; lastW = -1; lastBuff = ''; lastWx = -1; $('buffs').innerHTML = ''; $('wx').classList.add('hidden'); $('combo').classList.add('hidden'); $('boss').classList.add('hidden'); };
 
@@ -64,6 +67,9 @@ UI.update = () => {
   r.classList.toggle('ready', !on && G.rage >= 1);
   r.querySelector('em').textContent = on ? '暴怒中！' : G.rage >= 1 ? '按 Q 發動' : '殺越多集越快';
   $('vignette').classList.toggle('rage', on);
+  // 絕招槽
+  const u = $('ult'); u.querySelector('i').style.width = G.ult * 100 + '%'; u.classList.toggle('ready', G.ult >= 1);
+  u.querySelector('em').textContent = G.ult >= 1 ? '按 F 抽一招' : G.mode === 'free' ? 'Tab 可任選' : '殺敵累積';
   // 武器
   if (W.cur !== lastW) {
     lastW = W.cur; const w = WEAPONS[W.cur];
@@ -107,7 +113,7 @@ UI.end = (st) => {
   $('rank').textContent = r[1]; $('rank-t').textContent = r[2];
   $('e-score').textContent = Math.floor(G.score).toLocaleString(); $('e-kills').textContent = G.kills; $('e-combo').textContent = G.bestCombo;
   let fav = '-', fm = 0; for (const k in st.byWeapon) if (st.byWeapon[k] > fm) { fm = st.byWeapon[k]; fav = k; }
-  const names = { barrel: '瓦斯桶', kick: '踢飛', thunder: '雷劈', stomp: '巨人腳', nuke: '全島資遣令', meteor: '隕石雨', balloon: '氦氣彈', pumpkin: '南瓜神' }; WEAPONS.forEach((w) => (names[w.id] = w.name));
+  const names = { beast: '怪獸爪', car: '跑車', cannon: '充能臂砲', beam: '氣功波', disc: '圓鋸氣斬', ice: '寒冰劍', chain: '連鎖閃電', wolf: '野獸', robodog: '機器狗', zombie: '喪屍', turret: '砲塔', drone: '無人機', speed: '極速', scythe: '鐮刀', sword: '飛劍', bubble: '泡泡球', barrel: '瓦斯桶', kick: '踢飛', thunder: '雷劈', stomp: '巨人腳', nuke: '全島資遣令', meteor: '隕石雨', balloon: '氦氣彈', pumpkin: '南瓜神' }; WEAPONS.forEach((w) => (names[w.id] = w.name));
   $('e-fav').textContent = names[fav] || '-';
   let vic = '', vm = 0; for (const k in st.byVictim) if (st.byVictim[k] > vm) { vm = st.byVictim[k]; vic = k; }
   const hi = st.newHigh ? '　🏆 刷新本機紀錄！' : '';

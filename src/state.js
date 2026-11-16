@@ -11,7 +11,7 @@ export const G = {
   rage: 0, rageOn: 0, timeLeft: 0, elapsed: 0,
   boss: null, stats: null,
   onKill: null, onMulti: null,
-  wx: { rain: 0, storm: 0 }, buff: {}, eyeK: 1, env: null,
+  wx: { rain: 0, storm: 0 }, buff: {}, eyeK: 1, env: null, override: null, spMul: 1, fovAdd: 0, ult: 0,
 };
 
 export const R_ISLAND = 72;
