@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>暖島清算日 COZY ISLE: PAYBACK</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🔪%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --ink-forest:#2D4321; --ink-deep:#1D3314; --ink-panel:#1C3D20; --ink-line:#10240F;
+  --matcha:#81BD49; --matcha-deep:#62B149; --moss:#898B63; --clay:#D4A373; --ochre:#B99A6B; --bark:#4A3B18;
+  --paper:#FCF9F0; --paper-warm:#F7F1DC; --wheat:#E8D9B5; --ash:#DDDAD1; --gold:#F2C94C; --alert:#C8483A;
+  --text:#2A2418; --text-soft:#5C5334; --text-on-dark:#FDFCE3;
+  --shadow:0 4px 0 rgba(30,50,25,.35); --shadow-in:inset 0 2px 0 rgba(255,255,255,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none}
+html,body{height:100%;overflow:hidden;background:#C7DDD0;color:var(--text);
+  font-family:"Be Vietnam Pro","Yuanti TC","YouYuan","PingFang TC","Heiti TC","Microsoft JhengHei",sans-serif;font-weight:700}
+canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hidden{display:none!important}
+.layer{position:fixed;inset:0;pointer-events:none}
+.panel{background:var(--ink-panel);border:3px solid var(--ink-line);border-radius:18px;box-shadow:var(--shadow),var(--shadow-in);color:var(--text-on-dark)}
+
+/* ── HUD ── */
+#score-panel{position:absolute;left:20px;top:18px;padding:10px 20px 12px;min-width:190px}
+#score-panel small{display:block;font-size:14px;color:#B4C494;letter-spacing:2px}
+#score{font-size:38px;font-weight:800;line-height:1.05;color:#F2EFA8}
+#score-panel .row{font-size:16px;margin-top:4px;color:#B4C494}
+#score-panel .row b{color:var(--text-on-dark);font-size:20px;font-weight:800;margin:0 10px 0 4px}
+#timer{position:absolute;left:50%;top:18px;transform:translateX(-50%);height:54px;padding:0 28px;border-radius:28px;background:var(--paper-warm);
+  border:3.5px solid #2E2A1F;box-shadow:var(--shadow);display:flex;align-items:center;font-size:28px;font-weight:800;letter-spacing:3px;color:#211D12}
+#timer.low{background:var(--alert);color:var(--paper)}
+#feed{position:absolute;right:20px;top:18px;width:360px;display:flex;flex-direction:column;gap:7px;align-items:flex-end}
+#feed div{background:var(--paper-warm);border:2.5px solid #2E2A1F;border-radius:12px;padding:5px 12px 6px;font-size:15px;box-shadow:0 3px 0 rgba(40,60,30,.25);
+  animation:feedIn .18s ease-out;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#feed div b{font-weight:800;color:#17130A} #feed div em{font-style:normal;color:var(--alert);font-weight:800}
+#feed div.out{opacity:0;transition:opacity .4s}
+@keyframes feedIn{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+#combo{position:absolute;right:26px;top:46%;text-align:right;transform-origin:right center}
+#combo-n{font-size:64px;font-weight:800;color:var(--paper);-webkit-text-stroke:3px var(--ink-line);paint-order:stroke fill;line-height:1;text-shadow:0 5px 0 rgba(16,36,15,.45)}
+#combo-n small{font-size:24px;margin-left:6px;letter-spacing:3px}
+#combo-x{font-size:20px;font-weight:800;color:var(--gold);-webkit-text-stroke:2px var(--ink-line);paint-order:stroke fill}
+#combo-bar{width:190px;height:12px;background:#546638;border:2.5px solid var(--ink-line);border-radius:8px;overflow:hidden;margin:6px 0 0 auto}
+#combo-bar i{display:block;height:100%;background:var(--gold)}
+#combo.bump{animation:bump .16s ease-out}
+@keyframes bump{from{transform:scale(1.35)}to{transform:scale(1)}}
+#announce{position:absolute;left:50%;top:21%;transform:translateX(-50%);text-align:center;white-space:nowrap}
+#announce div{font-size:58px;font-weight:800;letter-spacing:6px;color:var(--gold);-webkit-text-stroke:4px var(--ink-line);paint-order:stroke fill;
+  text-shadow:0 6px 0 rgba(16,36,15,.5);animation:ann 1.5s ease-out forwards}
+#announce div.red{color:#E8523F} #announce div small{display:block;font-size:22px;letter-spacing:3px;color:var(--paper)}
+@keyframes ann{0%{transform:scale(2.2) rotate(-4deg);opacity:0}12%{transform:scale(1) rotate(-2deg);opacity:1}75%{transform:scale(1.04) rotate(-2deg);opacity:1}100%{transform:scale(1.1) translateY(-24px) rotate(-2deg);opacity:0}}
+#crosshair{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px}
+#crosshair i{position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3.5px;border-radius:50%;background:var(--paper);border:2px solid var(--ink-line)}
+#crosshair b{position:absolute;inset:0;border:3px solid var(--paper);border-radius:50%;opacity:.55;outline:1.5px solid rgba(16,36,15,.6);outline-offset:0}
+#crosshair.hit b{border-color:#E8523F;opacity:1;transform:scale(1.5)}
+#weapons{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:7px;padding:9px 11px}
+#weapons .w{width:60px;height:62px;border-radius:13px;background:var(--ink-deep);border:2.5px solid #2C4A22;position:relative;display:flex;align-items:center;justify-content:center;font-size:28px}
+#weapons .w span{position:absolute;left:5px;top:2px;font-size:13px;color:#B4C494;font-weight:800}
+#weapons .w.on{background:var(--paper-warm);border-color:#E5B32C;box-shadow:0 0 0 2.5px var(--gold);transform:translateY(-7px)}
+#weapons .w.on span{color:var(--bark)}
+#wname{position:absolute;left:50%;bottom:104px;transform:translateX(-50%);text-align:center;white-space:nowrap}
+#wname b{display:inline-block;background:#FDFCE3;border:3px solid #2E2A1F;border-radius:12px;padding:4px 16px 5px;font-size:20px;font-weight:800;color:#17130A;box-shadow:0 3px 0 rgba(40,60,30,.28);letter-spacing:2px}
+#wname small{display:block;margin-top:6px;font-size:15px;color:var(--paper);-webkit-text-stroke:3px var(--ink-line);paint-order:stroke fill;letter-spacing:1px}
+#ammo{position:absolute;right:24px;bottom:22px;padding:10px 18px;font-size:18px;min-width:150px;text-align:center}
+#ammo b{font-size:26px;font-weight:800;color:#F2EFA8}
+#ammo .bar,#rage .bar,#boss .bar{height:13px;background:#546638;border-radius:7px;overflow:hidden;margin-top:7px}
+#ammo .bar i{display:block;height:100%;background:var(--matcha-deep)}
+#rage{position:absolute;left:20px;bottom:22px;padding:10px 18px 12px;width:250px;font-size:16px}
+#rage .bar i{display:block;height:100%;background:var(--alert)}
+#rage em{font-style:normal;float:right;color:#B4C494;font-size:14px}
+#rage.ready{border-color:#E5B32C;box-shadow:0 0 0 2.5px var(--gold),var(--shadow)} #rage.ready em{color:var(--gold)}
+#boss{position:absolute;left:50%;top:86px;transform:translateX(-50%);width:460px;padding:9px 18px 12px;font-size:17px;text-align:center}
+#boss .bar i{display:block;height:100%;background:var(--alert)}
+#vignette{position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 0 0 rgba(200,72,58,0);transition:box-shadow .3s}
+#vignette.rage{box-shadow:inset 0 0 160px 40px rgba(200,40,30,.55)}
+#locks i{position:absolute;width:44px;height:44px;margin:-22px;border:3.5px solid var(--alert);border-radius:8px;transform:rotate(45deg);outline:2px solid var(--ink-line)}
+#gore i{position:absolute;opacity:.9;animation:drip 2.6s ease-in forwards}
+@keyframes drip{0%{transform:scale(.3);opacity:0}6%{transform:scale(1);opacity:.92}55%{opacity:.85}100%{transform:translateY(160px) scaleY(1.5);opacity:0}}
+.pop{position:absolute;left:0;top:0;white-space:nowrap;font-size:22px;font-weight:800;color:var(--gold);-webkit-text-stroke:3px var(--ink-line);paint-order:stroke fill;will-change:transform}
+.pop.big{font-size:36px;color:var(--paper)} .pop.bonus{font-size:19px;color:#F7F1DC} .pop.star{font-size:54px;color:var(--gold)}
+.pop.bubble{font-size:17px;font-weight:800;color:#17130A;-webkit-text-stroke:0;background:#FDFCE3;border:3px solid #2E2A1F;border-radius:14px;padding:4px 12px 5px;box-shadow:0 3px 0 rgba(40,60,30,.28)}
+
+/* ── 選單 ── */
+.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(29,51,20,.42);pointer-events:auto;padding:20px}
+.card{background:var(--paper);border:4px solid #2E2A1F;border-radius:26px;box-shadow:0 8px 0 rgba(30,50,25,.4);padding:30px 38px 30px;max-width:920px;width:100%;text-align:center;position:relative}
+.card h1{font-size:60px;font-weight:800;letter-spacing:6px;color:var(--ink-forest);line-height:1.1}
+.card h1 span{color:var(--alert)}
+.card .sub{font-size:18px;color:var(--text-soft);margin:8px 0 20px;letter-spacing:2px}
+.btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:18px 0 6px}
+.btn{height:60px;padding:0 30px;border-radius:14px;border:3px solid var(--ink-line);font-size:22px;font-weight:800;font-family:inherit;cursor:pointer;letter-spacing:4px;transition:transform .1s}
+.btn small{display:block;font-size:13px;letter-spacing:1px;font-weight:700;opacity:.8}
+.btn:hover{transform:translateY(-3px)} .btn:active{transform:translateY(2px);box-shadow:none!important}
+.btn-primary{background:var(--matcha-deep);color:#0E2408;box-shadow:0 4px 0 rgba(10,25,8,.5)}
+.btn-secondary{background:var(--paper-warm);color:#233018;border-color:#2E2A1F;box-shadow:0 4px 0 rgba(40,60,30,.3)}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-top:20px}
+.grid div{background:var(--paper-warm);border:2.5px solid #CFC49E;border-radius:12px;padding:8px 6px;font-size:15px;line-height:1.35}
+.grid div b{display:block;font-size:26px} .grid div small{display:block;color:var(--text-soft);font-size:13px}
+.keys{margin-top:16px;font-size:16px;color:var(--text-soft);line-height:2}
+kbd{display:inline-block;background:var(--wheat);border:2.5px solid #2E2A1F;border-radius:8px;padding:0 9px;font-family:inherit;font-size:15px;font-weight:800;color:#211D12;box-shadow:0 2px 0 rgba(40,60,30,.3);margin:0 2px;line-height:1.5}
+.note{margin-top:12px;font-size:14px;color:var(--moss)}
+#loading .card{max-width:520px} #loadbar{height:20px;background:#DDD2AC;border:2.5px solid #B9AC84;border-radius:10px;overflow:hidden;margin-top:18px}
+#loadbar i{display:block;height:100%;width:0;background:var(--matcha-deep)}
+#end h2{font-size:22px;color:var(--text-soft);letter-spacing:4px}
+#rank{font-size:130px;font-weight:800;color:var(--alert);line-height:1;-webkit-text-stroke:5px var(--ink-line);paint-order:stroke fill;text-shadow:0 8px 0 rgba(16,36,15,.35);margin:6px 0}
+#rank-t{font-size:26px;font-weight:800;color:var(--ink-forest);letter-spacing:3px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:20px 0 6px}
+.stats div{background:var(--paper-warm);border:2.5px solid #CFC49E;border-radius:12px;padding:10px}
+.stats div b{display:block;font-size:30px;font-weight:800;color:var(--ink-forest)} .stats div small{font-size:14px;color:var(--text-soft)}
+#end-detail{font-size:16px;color:var(--text-soft);line-height:1.9;margin-top:8px}
+#pause .card{max-width:520px} #pause h1{font-size:44px}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="labels" class="layer"></div>
+<div id="locks" class="layer"></div>
+<div id="gore" class="layer"></div>
+<div id="vignette"></div>
+
+<div id="hud" class="layer hidden">
+  <div id="score-panel" class="panel"><small>清算分數</small><div id="score">0</div><div class="row">擊殺<b id="kills">0</b>最高連殺<b id="best">0</b></div></div>
+  <div id="timer">3:00</div>
+  <div id="boss" class="panel hidden"><span id="boss-name"></span><div class="bar"><i></i></div></div>
+  <div id="feed"></div>
+  <div id="combo" class="hidden"><div id="combo-n"></div><div id="combo-x"></div><div id="combo-bar"><i></i></div></div>
+  <div id="announce"></div>
+  <div id="crosshair"><b></b><i></i></div>
+  <div id="rage" class="panel">暴怒<em>殺越多集越快</em><div class="bar"><i></i></div></div>
+  <div id="wname"><b></b><small></small></div>
+  <div id="weapons" class="panel"></div>
+  <div id="ammo" class="panel hidden"></div>
+</div>
+
+<div id="loading" class="screen"><div class="card"><h1 style="font-size:40px">暖島<span>清算日</span></h1><p class="sub" id="loadtxt">島民正在搭船過來…</p><div id="loadbar"><i></i></div></div></div>
+
+<div id="menu" class="screen hidden"><div class="card">
+  <h1>暖島<span>清算日</span></h1>
+  <p class="sub">COZY ISLE: PAYBACK　·　南瓜員工紓壓專用</p>
+  <div class="btns">
+    <button class="btn btn-primary" id="btn-score">考績結算<small>3 分鐘拚最高分</small></button>
+    <button class="btn btn-secondary" id="btn-free">無限發洩<small>不計時，殺到爽</small></button>
+  </div>
+  <div class="grid" id="wgrid"></div>
+  <p class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>移動　<kbd>Shift</kbd>衝刺　<kbd>空白</kbd>跳　<kbd>左鍵</kbd>攻擊　<kbd>右鍵</kbd>踢飛<br>
+  <kbd>1</kbd>–<kbd>0</kbd>或<kbd>滾輪</kbd>換武器　<kbd>Q</kbd>暴怒模式　<kbd>M</kbd>靜音　<kbd>Esc</kbd>暫停</p>
+  <p class="note" id="hiscore"></p>
+  <p class="note">島民全是 AI 做的 3D 模型，沒有任何動物（或同事）在製作過程中受傷。</p>
+</div></div>
+
+<div id="pause" class="screen hidden"><div class="card">
+  <h1>喘口氣</h1><p class="sub">島民正在趁機逃跑</p>
+  <div class="btns"><button class="btn btn-primary" id="btn-resume">繼續清算</button><button class="btn btn-secondary" id="btn-quit">回主選單</button></div>
+</div></div>
+
+<div id="end" class="screen hidden"><div class="card">
+  <h2>考績結算</h2><div id="rank">S</div><div id="rank-t"></div>
+  <div class="stats"><div><b id="e-score">0</b><small>清算分數</small></div><div><b id="e-kills">0</b><small>擊殺</small></div><div><b id="e-combo">0</b><small>最高連殺</small></div><div><b id="e-fav">-</b><small>最愛武器</small></div></div>
+  <p id="end-detail"></p>
+  <div class="btns"><button class="btn btn-primary" id="btn-again">再清算一次</button><button class="btn btn-secondary" id="btn-menu">回主選單</button></div>
+</div></div>
+
+<script src="assets.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
