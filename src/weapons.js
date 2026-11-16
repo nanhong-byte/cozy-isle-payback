@@ -96,7 +96,8 @@ function rayAnimals(o, d, maxT) {
   let best = null, bt = maxT;
   for (const a of G.animals) {
     const p = a.root.position;
-    const th = raySphere(o, d, p.x, p.y + a.H * 0.8, p.z, a.H * 0.3), tb = raySphere(o, d, p.x, p.y + a.H * 0.4, p.z, a.H * 0.42);
+    const bh = G.buff.bighead > 0 && !a.boss ? 2.2 : 1;
+    const th = raySphere(o, d, p.x, p.y + a.H * (bh > 1 ? 0.95 : 0.8), p.z, a.H * 0.3 * bh), tb = raySphere(o, d, p.x, p.y + a.H * 0.4, p.z, a.H * 0.42);
     if (th === null && tb === null) continue;
     const t = Math.min(th === null ? 1e9 : th, tb === null ? 1e9 : tb);
     if (t < bt) { bt = t; best = { a, head: th !== null, t }; }
@@ -264,7 +265,7 @@ function fireHole() {
         const p = a.root.position; center(a, _v); _v2.copy(pos).sub(_v); const d = _v2.length();
         if (a.boss) { if (d < 22) damage(a, 260 * dt, { weapon: 'hole', mode: 'gib', bossCap: 999 }); continue; }
         if (d > 24) continue;
-        if (a.state !== 'sucked') { if (a.chute) { a.root.remove(a.chute); a.chute = null; } a.state = 'sucked'; a.hole = hole; a.mixer.timeScale = 3; if (Math.random() < 0.3) S.scream(a.def.pitch, true); }
+        if (a.state !== 'sucked') { if (a.chute) { a.root.remove(a.chute); a.chute = null; } a.state = 'sucked'; a.hole = hole; a.mixer.timeScale = 3; if (Math.random() < 0.45) S.cry('rise', a.def.pitch, a.def.robot); }
         if (a.hole !== hole) a.hole = hole;
         _v2.multiplyScalar(1 / d); const sp = Math.min(42, 5 + 240 / (d + 2));
         p.x += (_v2.x * sp + -_v2.z * sp * 0.55) * dt; p.y += _v2.y * sp * dt; p.z += (_v2.z * sp + _v2.x * sp * 0.55) * dt;
@@ -339,10 +340,10 @@ function kick() {
 }
 
 export function updateWeapons(dt, wdt) {
-  const I = G.input, id = WEAPONS[W.cur].id, rage = G.rageOn > 0, rate = rage ? 0.5 : 1, P = G.player;
-  W.cd -= dt; W.kickCd -= dt; W.holeCd -= dt * (rage ? 2 : 1); W.rec = Math.max(0, W.rec - dt * 9);
+  const I = G.input, id = WEAPONS[W.cur].id, rage = G.rageOn > 0, rapid = G.buff.rapid > 0, rate = (rage ? 0.5 : 1) * (rapid ? 0.3 : 1), P = G.player;
+  W.cd -= dt; W.kickCd -= dt; W.holeCd -= dt * (rage ? 2 : 1) * (rapid ? 8 : 1); W.rec = Math.max(0, W.rec - dt * 9);
   if (W.kickT > 0) W.kickT -= dt;
-  if (W.missiles < 8) { W.missT += dt * (rage ? 2.5 : 1); if (W.missT > 0.5) { W.missT = 0; W.missiles++; } }
+  if (W.missiles < 8) { W.missT += dt * (rage ? 2.5 : 1) * (rapid ? 8 : 1); if (W.missT > 0.5) { W.missT = 0; W.missiles++; } }
   // 換武器
   if (W.switchT > 0) {
     W.switchT += dt / 0.2;

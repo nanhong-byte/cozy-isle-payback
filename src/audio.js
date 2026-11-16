@@ -3,7 +3,8 @@ import { rand } from './state.js';
 
 let ctx = null, master, sfx, music, noiseBuf;
 const last = {};
-export const A = { muted: false, tempo: 1 };
+export const A = { muted: false, tempo: 1, wail: true };
+let voices = 0;
 
 export function initAudio() {
   if (ctx) { ctx.resume(); return; }
@@ -99,6 +100,65 @@ export const S = {
   },
 };
 
+// ── 慘叫版：鋸齒波過三個共振峰（「啊」的嘴型），聽起來像卡通人聲 ──
+function voice(pts, dur, o = {}) {
+  if (!ctx || voices >= 7) return;
+  voices++; setTimeout(() => voices--, (dur + (o.delay || 0)) * 1000 + 80);
+  const t = ctx.currentTime + (o.delay || 0), vol = o.vol || 0.5, f0 = o.f0, k = o.form || 1;
+  const src = ctx.createOscillator(); src.type = 'sawtooth';
+  src.frequency.setValueAtTime(f0 * pts[0][1], t);
+  for (let i = 1; i < pts.length; i++) src.frequency.exponentialRampToValueAtTime(f0 * pts[i][1], t + dur * pts[i][0]);
+  const l = ctx.createOscillator(), lg = ctx.createGain(); l.frequency.value = o.vib || 9;
+  lg.gain.setValueAtTime(f0 * 0.01, t); lg.gain.linearRampToValueAtTime(f0 * (o.vibAmt === undefined ? 0.06 : o.vibAmt), t + dur);
+  l.connect(lg); lg.connect(src.frequency);
+  const out = ctx.createGain();
+  out.gain.setValueAtTime(0.0001, t); out.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+  out.gain.setValueAtTime(vol, t + dur * (o.hold || 0.7)); out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  [[850, 1.0, 5], [1350, 0.7, 7], [2800, 0.35, 8]].forEach(([f, g, q]) => {
+    const b = ctx.createBiquadFilter(); b.type = 'bandpass'; b.frequency.value = f * k; b.Q.value = q;
+    const bg = ctx.createGain(); bg.gain.value = g; src.connect(b); b.connect(bg); bg.connect(out);
+  });
+  const stop = [src, l];
+  if (o.trem) { // 咕嚕咕嚕的斷氣聲
+    const tg = ctx.createGain(); tg.gain.value = 0.55; const tl = ctx.createOscillator(); tl.type = 'square'; tl.frequency.value = o.trem;
+    const tlg = ctx.createGain(); tlg.gain.value = 0.45; tl.connect(tlg); tlg.connect(tg.gain); out.connect(tg); tg.connect(sfx); tl.start(t); stop.push(tl);
+  } else out.connect(sfx);
+  src.start(t); l.start(t); stop.forEach((x) => x.stop(t + dur + 0.05));
+  nz(dur * 0.8, vol * 0.22, 2500 * k, 1800 * k, 'bandpass', o.delay || 0, 1.5);
+}
+const WAILS = {
+  yelp: () => [[[0, 1], [0.25, 1.7], [1, 1.2]], rand(0.22, 0.34), {}],
+  long: () => [[[0, 1], [0.08, 1.8], [0.5, 1.65], [1, 1.25]], rand(1.0, 1.5), { vibAmt: 0.09, vib: 11 }],
+  fall: () => [[[0, 1.2], [0.1, 2.0], [1, 0.55]], rand(1.3, 1.8), { vibAmt: 0.05 }],
+  rise: () => [[[0, 0.9], [1, 2.6]], 1.1, { vibAmt: 0.1, vib: 14 }],
+  cut: () => [[[0, 1.3], [0.5, 2.0], [1, 1.9]], 0.2, { hold: 0.95 }],
+  gurgle: () => [[[0, 1.3], [0.2, 1.0], [1, 0.5]], rand(0.7, 1.0), { trem: 17, vibAmt: 0.02 }],
+  squeak: () => [[[0, 2.2], [1, 3.2]], 0.09, { hold: 0.9 }],
+  roar: () => [[[0, 0.8], [0.15, 1.3], [1, 0.6]], 2.2, { vibAmt: 0.12, vib: 7, vol: 0.75 }],
+};
+S.wail = (kind, pitch = 1, robot = false) => {
+  if (!ctx || !ok('wl' + kind, kind === 'yelp' || kind === 'squeak' ? 60 : 110)) return;
+  if (robot) { // 機器人：一串往下掉的嗶嗶聲
+    const n = kind === 'yelp' || kind === 'squeak' || kind === 'cut' ? 2 : 6;
+    for (let i = 0; i < n; i++) osc('square', (950 - i * 110) * rand(0.9, 1.1), 700 - i * 100, 0.07, 0.16, i * 0.075);
+    nz(0.3, 0.2, 4000, 800, 'bandpass', 0, 6); return;
+  }
+  const w = (WAILS[kind] || WAILS.yelp)(), f0 = 520 * pitch * rand(0.92, 1.1), form = 0.8 + pitch * 0.35;
+  voice(w[0], w[1], Object.assign({ f0, form }, w[2]));
+  if (kind === 'cut') voice([[0, 1.2], [1, 0.5]], 0.6, { f0: f0 * 0.8, form, trem: 19, delay: 0.22, vol: 0.3 });
+};
+// 統一入口：慘叫版開著走新合成；關著走原本的短叫聲（legacy=false 表示原版這裡不叫）
+S.cry = (kind, pitch = 1, robot = false, legacy = true) => { if (A.wail) S.wail(kind, pitch, robot); else if (legacy) S.scream(pitch, kind !== 'yelp'); };
+S.thunder = (near = true) => {
+  if (!ok('thun', 250)) return;
+  if (near) { nz(0.2, 0.9, 7000, 1200, 'highpass'); osc('square', 1400, 90, 0.12, 0.4); }
+  nz(2.6, near ? 0.9 : 0.45, 420, 40); osc('sine', 72, 22, 1.8, near ? 0.8 : 0.4); nz(1.6, 0.35, 220, 50, 'lowpass', 0.6);
+};
+S.zap = () => { if (!ok('zap', 50)) return; osc('sawtooth', 1900, 180, 0.12, 0.28); nz(0.14, 0.45, 7000, 3000, 'highpass'); };
+S.pickup = () => { [0, 4, 7, 12, 16, 19].forEach((s, i) => osc('triangle', 587 * Math.pow(2, s / 12), 0, 0.16, 0.24, i * 0.055)); };
+S.siren = () => { for (let i = 0; i < 6; i++) osc('sawtooth', 420, 860, 0.46, 0.22, i * 0.5); };
+S.tick = () => { osc('square', 1200, 1200, 0.03, 0.12); };
+
 // 持續音（電鋸、噴火、黑洞）
 const loops = {};
 const LOOPDEF = {
@@ -127,6 +187,13 @@ const LOOPDEF = {
     const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 300; f.Q.value = 3;
     const sg = ctx.createGain(); sg.gain.value = 0.25; s.connect(f); f.connect(sg); sg.connect(n.g);
     a.start(); b.start(); s.start(); n.stop = [a, b, s]; n.set = () => {};
+  },
+  rain(n) {
+    const s = ctx.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1400;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 7500;
+    const sg = ctx.createGain(); sg.gain.value = 0.05; s.connect(hp); hp.connect(lp); lp.connect(sg); sg.connect(n.g);
+    s.start(); n.stop = [s]; n.set = (k) => { sg.gain.setTargetAtTime(0.04 + k * 0.3, ctx.currentTime, 0.3); };
   },
 };
 export function loop(name, on, k = 0) {

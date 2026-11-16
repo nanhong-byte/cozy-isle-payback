@@ -67,14 +67,16 @@ export function buildWorld() {
   const sp = sg.attributes.position, sa = new Float32Array(sp.count * 3);
   for (let i = 0; i < sp.count; i++) { const k = Math.max(0, Math.min(1, sp.getY(i) / 260)); cc.copy(lo).lerp(hi, Math.pow(k, 0.7)); sa.set([cc.r, cc.g, cc.b], i * 3); }
   sg.setAttribute('color', new THREE.BufferAttribute(sa, 3));
-  sc.add(new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false })));
+  const skyMat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false });
+  sc.add(new THREE.Mesh(sg, skyMat));
   sc.fog = new THREE.Fog(PAL.skyLo, 110, 330);
 
-  sc.add(new THREE.HemisphereLight(0xFFF8E4, 0x7FA65A, 1.5));
+  const hemi = new THREE.HemisphereLight(0xFFF8E4, 0x7FA65A, 1.5); sc.add(hemi);
   const sun = new THREE.DirectionalLight(0xFFF1D0, 1.9); sun.position.set(40, 80, 30); sc.add(sun);
+  G.env = { sky: skyMat, hemi, sun, sea: null };
 
   // 海、沙灘、草地
-  const sea = new THREE.Mesh(new THREE.CircleGeometry(700, 48).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: PAL.water })); sea.position.y = -0.7; sc.add(sea);
+  const sea = new THREE.Mesh(new THREE.CircleGeometry(700, 48).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: PAL.water })); sea.position.y = -0.7; sc.add(sea); G.env.sea = sea.material;
   const foam = new THREE.Mesh(new THREE.RingGeometry(R_ISLAND + 9.5, R_ISLAND + 11.5, 64).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xFCF9F0, transparent: true, opacity: 0.7 })); foam.position.y = -0.66; sc.add(foam); G.foam = foam;
   const sand = new THREE.Mesh(new THREE.CylinderGeometry(R_ISLAND + 9, R_ISLAND + 12, 0.8, 56), new THREE.MeshLambertMaterial({ color: PAL.sand })); sand.position.y = -0.46; sc.add(sand);
   const grass = new THREE.Mesh(new THREE.CircleGeometry(R_ISLAND + 3, 64).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ map: groundTexture() })); sc.add(grass);

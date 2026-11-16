@@ -5,7 +5,7 @@ import { WEAPONS, W } from './weapons.js';
 
 const $ = (id) => document.getElementById(id);
 const _v = new THREE.Vector3();
-let lastCombo = 0, lastW = -1, lockEls = [];
+let lastCombo = 0, lastW = -1, lockEls = [], lastBuff = '', lastWx = -1;
 export const UI = {};
 
 UI.init = (h) => {
@@ -17,6 +17,7 @@ UI.init = (h) => {
   $('btn-quit').onclick = () => h.menu();
   $('btn-again').onclick = () => h.start(G.lastMode || 'score');
   $('btn-menu').onclick = () => h.menu();
+  $('btn-wail').onclick = () => h.wail();
   UI.hiscore();
 };
 UI.hiscore = () => {
@@ -24,12 +25,13 @@ UI.hiscore = () => {
   $('hiscore').textContent = hs ? `本機最高分：${hs.toLocaleString()}` : '';
   return hs;
 };
+UI.wail = (on) => { $('btn-wail').innerHTML = `😱 慘叫版：${on ? '開' : '關'}<small>${on ? '島民會叫得很慘' : '只有原本的小叫聲'}</small>`; $('btn-wail').classList.toggle('off', !on); };
 UI.loading = (p) => { $('loadbar').firstElementChild.style.width = Math.round(p * 100) + '%'; };
 UI.show = (name) => {
   ['loading', 'menu', 'pause', 'end'].forEach((s) => $(s).classList.toggle('hidden', s !== name));
   $('hud').classList.toggle('hidden', !(name === 'hud' || name === 'pause'));
 };
-UI.reset = () => { $('feed').innerHTML = ''; $('announce').innerHTML = ''; $('locks').innerHTML = ''; lockEls = []; lastCombo = 0; lastW = -1; $('combo').classList.add('hidden'); $('boss').classList.add('hidden'); };
+UI.reset = () => { $('feed').innerHTML = ''; $('announce').innerHTML = ''; $('locks').innerHTML = ''; lockEls = []; lastCombo = 0; lastW = -1; lastBuff = ''; lastWx = -1; $('buffs').innerHTML = ''; $('wx').classList.add('hidden'); $('combo').classList.add('hidden'); $('boss').classList.add('hidden'); };
 
 UI.feed = (html) => {
   const f = $('feed'), d = document.createElement('div'); d.innerHTML = html; f.appendChild(d);
@@ -73,6 +75,13 @@ UI.update = () => {
   else if (id === 'hole') { am.classList.remove('hidden'); const k = Math.max(0, 1 - Math.max(0, W.holeCd) / 7); am.innerHTML = `${k >= 1 ? '<b>黑洞就緒</b>' : '黑洞充能中'}<div class="bar"><i style="width:${k * 100}%"></i></div>`; }
   else if (id === 'sling') { am.classList.remove('hidden'); am.innerHTML = `蓄力<div class="bar"><i style="width:${W.charge * 100}%"></i></div>`; }
   else am.classList.add('hidden');
+  // 隱藏道具效果
+  const bk = Object.keys(G.buff), bs = bk.join(','), bx = $('buffs');
+  if (bs !== lastBuff) { lastBuff = bs; bx.innerHTML = bk.map((id) => `<div><b>${G.itemDefs[id].icon} ${G.itemDefs[id].name}</b><i></i></div>`).join(''); }
+  for (let i = 0; i < bk.length && i < bx.children.length; i++) bx.children[i].lastElementChild.style.width = Math.max(0, Math.min(1, G.buff[bk[i]] / G.itemDefs[bk[i]].dur)) * 100 + '%';
+  // 天氣
+  const wx = G.wx.rain < 0.05 ? 0 : G.wx.storm > 0 ? 2 : 1;
+  if (wx !== lastWx) { lastWx = wx; const e = $('wx'); e.classList.toggle('hidden', !wx); e.textContent = wx === 2 ? '⛈️ 雷雨' : '🌧️ 下雨'; }
   // 準星命中
   if (G.hitMark > 0) G.hitMark -= 0.016;
   $('crosshair').classList.toggle('hit', G.hitMark > 0);
@@ -98,10 +107,10 @@ UI.end = (st) => {
   $('rank').textContent = r[1]; $('rank-t').textContent = r[2];
   $('e-score').textContent = Math.floor(G.score).toLocaleString(); $('e-kills').textContent = G.kills; $('e-combo').textContent = G.bestCombo;
   let fav = '-', fm = 0; for (const k in st.byWeapon) if (st.byWeapon[k] > fm) { fm = st.byWeapon[k]; fav = k; }
-  const names = { barrel: '瓦斯桶', kick: '踢飛' }; WEAPONS.forEach((w) => (names[w.id] = w.name));
+  const names = { barrel: '瓦斯桶', kick: '踢飛', thunder: '雷劈', stomp: '巨人腳', nuke: '全島資遣令', meteor: '隕石雨', balloon: '氦氣彈', pumpkin: '南瓜神' }; WEAPONS.forEach((w) => (names[w.id] = w.name));
   $('e-fav').textContent = names[fav] || '-';
   let vic = '', vm = 0; for (const k in st.byVictim) if (st.byVictim[k] > vm) { vm = st.byVictim[k]; vic = k; }
   const hi = st.newHigh ? '　🏆 刷新本機紀錄！' : '';
-  $('end-detail').innerHTML = `爆頭 ${st.head}　·　空中擊殺 ${st.air}　·　一石多鳥 ${st.multi} 次　·　巨大島民 ${st.boss}<br>${vic ? `最常被清算的是 <b>${vic}</b>（${vm} 次）` : ''}${hi}`;
+  $('end-detail').innerHTML = `爆頭 ${st.head}　·　空中擊殺 ${st.air}　·　一石多鳥 ${st.multi} 次　·　巨大島民 ${st.boss}　·　隱藏道具 ${st.items || 0}<br>${vic ? `最常被清算的是 <b>${vic}</b>（${vm} 次）` : ''}${hi}`;
   UI.show('end');
 };

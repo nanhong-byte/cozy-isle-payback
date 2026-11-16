@@ -7,13 +7,16 @@ import { buildWorld, updateWorld } from './world.js';
 import { loadAnimals, updateAnimals, spawnRandom, spawnBoss, clearAnimals, DEATH_TEXT } from './animals.js';
 import { initWeapons, updateWeapons, selectWeapon, resetWeapons, WEAPONS, W } from './weapons.js';
 import { UI } from './ui.js';
+import { initWeather, updateWeather, resetWeather, setWeather, strike } from './weather.js';
+import { initItems, updateItems, resetItems, placeHidden, give, itemOnKill } from './items.js';
 
 const canvas = document.getElementById('game');
 const keys = {};
 const debug = location.search.includes('debug');
 G.input = { fire: false, firePressed: false, altPressed: false };
 G.player = { pos: V(0, 0, 24), vel: V(), kvel: V(), yaw: 0, pitch: 0, onGround: true, bobT: 0, dash: null };
-let last = 0, spawnT = 0, nextBoss = 25, menuAng = 0, muted = false, everLocked = false, noLock = false;
+let last = 0, spawnT = 0, nextBoss = 25, menuAng = 0, muted = false, everLocked = false, noLock = false, bossCallT = 0;
+try { A.wail = localStorage.getItem('cozy-payback-wail') !== '0'; } catch (e) { /* 忽略 */ }
 
 const ANN = { 3: '三連殺！', 5: '大開殺戒！', 8: '血流成河！', 12: '暖島屠夫！', 16: '績效超標！', 20: '人資看了都怕！', 25: '無情開單機器！', 30: '這不是加班是屠殺！', 40: '全島資遣！', 50: '神之清算！' };
 
@@ -24,8 +27,8 @@ async function boot() {
   G.renderer = renderer; G.scene = new THREE.Scene();
   G.camera = new THREE.PerspectiveCamera(78, innerWidth / innerHeight, 0.05, 900);
   G.camera.rotation.order = 'YXZ'; G.scene.add(G.camera);
-  buildWorld(); initFX(); initWeapons();
-  UI.init({ start, resume, menu: toMenu });
+  buildWorld(); initFX(); initWeapons(); initWeather(); initItems();
+  UI.init({ start, resume, menu: toMenu, wail: toggleWail }); UI.wail(A.wail);
   G.onKill = onKill; G.onMulti = onMulti;
   bindInput();
   await loadAnimals(UI.loading);
@@ -38,7 +41,12 @@ function resetRun() {
   G.score = 0; G.kills = 0; G.combo = 0; G.comboT = 0; G.bestCombo = 0; G.rage = 0; G.rageOn = 0; G.elapsed = 0; G.timeLeft = 180;
   G.slow = 1; G.hitstop = 0; G.slowmoT = 0; G.trauma = 0; G.boss = null; A.tempo = 1;
   G.stats = { byWeapon: {}, byVictim: {}, head: 0, air: 0, multi: 0, boss: 0 };
-  spawnT = 0; nextBoss = 25;
+  spawnT = 0; nextBoss = 25; bossCallT = 0; resetWeather(); resetItems();
+}
+function toggleWail() {
+  A.wail = !A.wail; UI.wail(A.wail); initAudio(); if (A.wail) S.wail('long', 1.1); else S.ui();
+  try { localStorage.setItem('cozy-payback-wail', A.wail ? '1' : '0'); } catch (e) { /* 忽略 */ }
+  if (G.mode === 'score' || G.mode === 'free') UI.feed(`慘叫版 <b>${A.wail ? '開' : '關'}</b>`);
 }
 function toMenu() {
   resetRun(); stopAllLoops();
@@ -54,6 +62,7 @@ function start(mode) {
   const P = G.player; P.pos.set(0, 0, 24); P.vel.set(0, 0, 0); P.kvel.set(0, 0, 0); P.yaw = 0; P.pitch = 0; P.onGround = true; P.dash = null;
   for (let i = 0; i < 12; i++) spawnRandom(false, [0, 6, 6, 26]);
   for (let i = 0; i < 6; i++) spawnRandom(true);
+  placeHidden();
   G.camera.children.forEach((c) => (c.visible = true));
   UI.reset(); UI.show('hud');
   UI.announce('清算開始！', '今天他們一個都別想下班', true);
@@ -85,9 +94,12 @@ function onKill(a, mode, info) {
   if (mode === 'drown') { pts += 150; tags.push('餵鯊魚'); }
   if (info.style === 'bowling') { pts += 200; tags.push('保齡球'); }
   if (info.style === 'spread') { pts += 80; tags.push('延燒'); }
+  if (mode === 'zap') { pts += 100; tags.push(info.style === 'chain' ? '連鎖電擊' : '天打雷劈'); }
+  if (a.gold) { pts += 1500; tags.push('金色島民'); }
   pts = Math.round(pts * mult); G.score += pts;
   const w = info.weapon || 'kick'; st.byWeapon[w] = (st.byWeapon[w] || 0) + 1; st.byVictim[a.def.name] = (st.byVictim[a.def.name] || 0) + 1;
   if (a.boss) st.boss++;
+  itemOnKill(a);
   popup(V(p.x, p.y + a.H + 0.3, p.z), '+' + pts, a.boss ? 'big' : '');
   if (tags.length) popup(V(p.x, p.y + a.H + 0.95, p.z), tags.join(' · '), 'bonus', 1.2, 1.2);
   UI.feed(`<b>${a.def.name}</b>（${a.def.role}）<em>${DEATH_TEXT[mode] || '下班了'}</em>`);
@@ -115,6 +127,8 @@ function bindInput() {
     if (e.code.startsWith('Digit')) selectWeapon((+e.code.slice(5) + 9) % 10);
     else if (e.code === 'KeyQ') rage();
     else if (e.code === 'KeyM') { muted = !muted; setMuted(muted); }
+    else if (e.code === 'KeyC') toggleWail();
+    else if (e.code === 'KeyB' && !G.boss && !G.paused && bossCallT <= 0) { bossCallT = 20; const b = spawnBoss(); UI.announce('你把老闆叫出來了', `巨大化的${b.def.name}`, true); } // 彩蛋
     else if (e.code === 'KeyP') { if (G.paused) resume(); else { if (document.pointerLockElement) document.exitPointerLock(); pause(); } }
     else if (e.code === 'KeyT' && G.mode === 'score' && debug) G.timeLeft = 3;
   });
@@ -147,7 +161,7 @@ function updatePlayer(dt) {
   const mx = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), mz = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
   let wx = -sy * mz + cy * mx, wz = -cy * mz - sy * mx; const l = Math.hypot(wx, wz); if (l > 0) { wx /= l; wz /= l; }
   const sprint = keys.ShiftLeft || keys.ShiftRight;
-  let sp = sprint ? 13.5 : 9.5; if (G.rageOn > 0) sp *= 1.25; if (W.firing && WEAPONS[W.cur].id === 'saw') sp *= 1.12;
+  let sp = sprint ? 13.5 : 9.5; if (G.rageOn > 0) sp *= 1.25; if (G.buff.giant > 0) sp *= 1.3; if (W.firing && WEAPONS[W.cur].id === 'saw') sp *= 1.12;
   const k = 1 - Math.exp(-(P.onGround ? 14 : 3.5) * dt);
   P.vel.x += (wx * sp - P.vel.x) * k; P.vel.z += (wz * sp - P.vel.z) * k;
   if (P.dash) { P.vel.x = P.dash.x * P.dash.speed; P.vel.z = P.dash.z * P.dash.speed; P.dash.t -= dt; if (P.dash.t <= 0) { P.dash = null; P.vel.x *= 0.2; P.vel.z *= 0.2; } }
@@ -165,7 +179,7 @@ function updatePlayer(dt) {
   const hs = Math.hypot(P.vel.x, P.vel.z);
   if (P.onGround && l > 0) P.bobT += dt * hs * 1.5;
   const bob = P.onGround ? Math.sin(P.bobT) * 0.045 * Math.min(1, hs / 9) : 0;
-  cam.position.set(P.pos.x, P.pos.y + 1.72 + bob, P.pos.z);
+  cam.position.set(P.pos.x, P.pos.y + (1.72 + bob) * G.eyeK, P.pos.z);
   const s = G.trauma * G.trauma;
   cam.rotation.set(P.pitch + rand(-1, 1) * 0.05 * s, P.yaw + rand(-1, 1) * 0.05 * s, rand(-1, 1) * 0.04 * s);
   const fov = 78 + (sprint && l > 0 ? 5 : 0) + (G.rageOn > 0 ? 9 : 0) + (P.dash ? 14 : 0);
@@ -180,7 +194,8 @@ function update(dt) {
   G.slow = lerp(G.slow, slow, Math.min(1, dt * 10));
   let wdt = dt * G.slow; if (G.hitstop > 0) { G.hitstop -= dt; wdt = 0; }
   G.wdt = wdt;
-  updatePlayer(dt); updateWeapons(dt, wdt); updateAnimals(wdt);
+  bossCallT -= dt;
+  updatePlayer(dt); updateWeapons(dt, wdt); updateAnimals(G.buff.stop > 0 ? 0 : wdt); updateItems(dt, wdt); updateWeather(dt, wdt);
   for (let i = G.timers.length - 1; i >= 0; i--) { const tm = G.timers[i]; tm.t -= wdt; if (tm.t <= 0) { G.timers.splice(i, 1); tm.fn(); } }
   updateFX(wdt, dt); updateWorld(wdt);
   // 補島民：隨時間越來越多
@@ -195,7 +210,7 @@ function tick(dt) {
   if (G.mode === 'menu' || G.mode === 'end') {
     const k = G.mode === 'end' ? 0.3 : 1; G.t += dt; G.wdt = dt * k;
     if (G.mode === 'menu') { menuAng += dt * 0.1; G.camera.position.set(Math.cos(menuAng) * 44, 13, Math.sin(menuAng) * 44); G.camera.lookAt(0, 2.5, 0); }
-    updateAnimals(dt * k); updateFX(dt * k, dt); updateWorld(dt);
+    updateAnimals(dt * k); updateFX(dt * k, dt); updateWorld(dt); if (G.mode === 'end') updateWeather(dt, dt * k, true);
     for (let i = G.timers.length - 1; i >= 0; i--) { const tm = G.timers[i]; tm.t -= dt * k; if (tm.t <= 0) { G.timers.splice(i, 1); tm.fn(); } }
   } else if (!G.paused) update(dt);
   G.renderer.render(G.scene, G.camera);
@@ -213,6 +228,7 @@ window.GAME = {
   step(n = 60, dt = 1 / 60) { for (let i = 0; i < n; i++) tick(dt); },
   fire(on) { G.input.fire = on; if (on) G.input.firePressed = true; },
   aim(a) { const P = G.player, c = a.root.position, dx = c.x - P.pos.x, dy = c.y + a.H * 0.5 - (P.pos.y + 1.72), dz = c.z - P.pos.z; P.yaw = Math.atan2(-dx, -dz); P.pitch = Math.atan2(dy, Math.hypot(dx, dz)); },
+  give, strike, weather: setWeather, A,
   near() { const P = G.player.pos; let b = null, bd = 1e9; for (const a of G.animals) { const d = a.root.position.distanceToSquared(P); if (d < bd) { bd = d; b = a; } } return b; },
 };
 

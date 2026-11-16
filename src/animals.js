@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { G, R_ISLAND, BLOOD, rand, pick, clamp, V, after } from './state.js';
 import { FX, blood, mist, dust, boomFX, sparks, ring, shake, shakeAt, popup, bubble, screenBlood } from './fx.js';
-import { S } from './audio.js';
+import { S, A } from './audio.js';
 
 export const DEFS = {
   persi: { name: '小柿子', animal: '狐狸', role: 'PM', size: 1.6, walk: 2.2, run: 8.6, hp: 100, sense: 10.5, w: 14, pitch: 1.0, fur: 0xE8742A,
@@ -31,7 +31,7 @@ export const DEFS = {
 const PANIC = ['不要啊啊啊！', '我只是照流程走！', '有話好說！', '我下次不敢了！', '這不在我的職責範圍！', '我要報加班！', '我還有三張單沒結！', '救命啊人資！', '我明天請假！'];
 export const DEATH_TEXT = {
   slice: '被一刀兩斷', flat: '被拍成肉餅', launch: '飛去當星星了', gib: '炸成絞肉', burn: '烤到全熟', headpop: '腦袋搬家',
-  hole: '被黑洞回收', wall: '黏在牆上', splat: '摔成一攤', drop: '永久下班', drown: '去餵鯊魚了', mega: '轟然倒下',
+  hole: '被黑洞回收', zap: '被雷公點名', wall: '黏在牆上', splat: '摔成一攤', drop: '永久下班', drown: '去餵鯊魚了', mega: '轟然倒下',
 };
 
 const T = {};          // 模型樣板
@@ -40,6 +40,10 @@ const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _c = new THREE.Color(
 let shadowMesh; const _d = new THREE.Object3D();
 let capMat, chuteGeo, chuteMat;
 const MEAT = [0xC8483A, 0xE06A5A, 0xA83228, 0xEFA69A];
+// 慘叫版：每種死法配一種叫聲
+const WAIL = { slice: 'cut', flat: 'squeak', gib: 'yelp', headpop: 'cut', hole: 'rise', wall: 'yelp', splat: 'yelp', drown: 'gurgle', drop: 'gurgle', mega: 'roar', zap: 'cut' };
+const AAA = ['啊啊啊啊！', '嗚哇啊啊！', '不～～～！', '媽呀！', '咿呀——！', '呃啊！', '救命啊！', '我的年終～'];
+const cry = (a, kind, legacy = true) => S.cry(kind, a.def.pitch * (a.boss ? 0.45 : 1), a.def.robot, legacy);
 
 export async function loadAnimals(onProgress) {
   const loader = new GLTFLoader(); const keys = Object.keys(DEFS); let n = 0;
@@ -94,7 +98,7 @@ export function spawnAnimal(key, x, z, o = {}) {
     key, def, root, tilt, model, mat, bones, mixer, acts, cur: null, animRate: 1, H,
     hp: def.hp * (o.hpMul || 1), maxHp: def.hp * (o.hpMul || 1), boss: !!o.boss,
     state: 'idle', timer: rand(0.5, 3), yaw: rand(6.28), vel: V(), spin: 0, tx: x, tz: z,
-    seed: rand(100), jit: 0, hopT: rand(6), baseY: def.fly ? 2.2 : 0, heat: 0, flash: 0, dead: false, label: null, chute: null, talkT: rand(2, 10), dP: 99,
+    seed: rand(100), jit: 0, hopT: rand(6), baseY: def.fly ? 2.2 : 0, heat: 0, flash: 0, dead: false, label: null, chute: null, talkT: rand(2, 10), dP: 99, scrT: rand(0.5, 2), hurtT: 0,
   };
   root.rotation.y = a.yaw;
   if (o.drop) {
@@ -130,7 +134,7 @@ function startFlee(a) {
   a.state = 'flee'; a.timer = rand(3, 5.5); a.jit = rand(-0.7, 0.7);
   play(a, 'walk', 2.4);
   if (Math.random() < 0.45 && a.dP < 40) bubble(a, pick(PANIC), 1.7);
-  if (a.dP < 35) S.scream(a.def.pitch);
+  if (a.dP < 35) cry(a, Math.random() < 0.4 ? 'long' : 'yelp');
 }
 function cutChute(a) { if (a.chute) { a.root.remove(a.chute); a.chute = null; } }
 
@@ -201,6 +205,11 @@ export function updateAnimals(dt) {
           fx = fx * (1 - k) + (tx * 0.85 + ix * 0.5) * k; fz = fz * (1 - k) + (tz * 0.85 + iz * 0.5) * k;
           const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l;
         }
+        if (A.wail && dP < 22) { a.scrT -= dt; if (a.scrT <= 0) { a.scrT = rand(1.2, 3); cry(a, 'long', false); } }
+        if (G.wx.rain > 0.4 && !def.fly && p.y < 0.3 && Math.random() < dt * 0.09 * G.wx.rain) { // 雨天地滑
+          a.vel.set(fx * def.run * 0.9, 4.5, fz * def.run * 0.9); a.state = 'air'; a.spin = rand(4, 8);
+          if (dP < 30) bubble(a, pick(['地好滑！', '哇啊！', '誰沒拖地！']), 1.2); cry(a, 'yelp', false); break;
+        }
         step(a, fx, fz, def.run, dt);
         if (a.timer <= 0 && dP > def.sense * 1.5) { a.state = 'idle'; a.timer = rand(1, 3); play(a, 'idle'); if (!def.fly) p.y = 0; }
         break;
@@ -265,13 +274,14 @@ export function damage(a, amt, info = {}) {
   if (a.boss) amt = Math.min(amt, info.bossCap || 300);
   a.hp -= amt; a.flash = 0.1; if (info.weapon) a.lastWeapon = info.weapon;
   if (a.hp <= 0) { kill(a, info); return true; }
-  if (a.boss) return false;
+  if (a.boss) { if (A.wail && G.t - a.hurtT > 1.2) { a.hurtT = G.t; cry(a, 'yelp', false); } return false; }
   if (info.knock) {
     cutChute(a); a.root.rotation.z = 0; a.vel.copy(info.knock); a.state = 'air'; a.spin = rand(6, 13);
     if (a.root.position.y < 0.1) a.root.position.y = 0.1;
-    S.scream(a.def.pitch);
-  } else if (a.state === 'drop') { cutChute(a); a.root.rotation.z = 0; a.vel.set(0, -3, 0); a.state = 'air'; a.spin = rand(3, 6); S.scream(a.def.pitch, true); }
+    cry(a, A.wail ? 'fall' : 'yelp');
+  } else if (a.state === 'drop') { cutChute(a); a.root.rotation.z = 0; a.vel.set(0, -3, 0); a.state = 'air'; a.spin = rand(3, 6); cry(a, 'fall'); }
   else if (a.state === 'idle' || a.state === 'wander') startFlee(a);
+  else if (A.wail && G.t - a.hurtT > (a.boss ? 1.2 : 0.5)) { a.hurtT = G.t; cry(a, 'yelp', false); }
   return false;
 }
 
@@ -285,6 +295,10 @@ export function kill(a, info = {}) {
   const p = a.root.position;
   info.air = !a.def.fly && p.y > 1.3;
   if (G.onKill) G.onKill(a, mode, info);
+  if (A.wail) {
+    if (WAIL[mode]) cry(a, WAIL[mode], false);
+    if (a.dP < 30 && Math.random() < 0.3) popup(V(p.x, p.y + a.H + 0.5, p.z), pick(AAA), 'scream', 0.9, 2.4);
+  }
   alarm(p.x, p.z, 24);
   if (a.state === 'sucked') a.tilt.scale.setScalar(1);
   DEATH[mode](a, info);
@@ -418,7 +432,7 @@ const DEATH = {
   },
   launch(a, info) {
     const p = a.root.position, v = info.dir.clone().multiplyScalar(46); v.y = Math.max(v.y, 12) + 9;
-    S.crack(); S.scream(a.def.pitch, true); a.mixer.timeScale = 3;
+    S.crack(); cry(a, 'fall'); a.mixer.timeScale = 3;
     blood(p.x, p.y + a.H * 0.5, p.z, info.dir.x, 0.5, info.dir.z, 12, 7, a.def.robot);
     let t = 0;
     corpses.push({
@@ -442,8 +456,8 @@ const DEATH = {
     });
   },
   burn(a) {
-    const p = a.root.position; let t = 0, heading = a.yaw, charred = false, spreadT = 0; const run = rand(1.8, 2.6);
-    play(a, 'walk', 3.2); S.scream(a.def.pitch, true); a.mat.transparent = false; a.mat.opacity = 1;
+    const p = a.root.position; let t = 0, heading = a.yaw, charred = false, spreadT = 0, wt = rand(0.5, 0.9); const run = rand(1.8, 2.6);
+    play(a, 'walk', 3.2); cry(a, 'long'); a.mat.transparent = false; a.mat.opacity = 1;
     if (Math.random() < 0.6) bubble({ root: a.root, H: a.H, dead: false, label: null }, pick(['燙燙燙燙！', '我著火了！', '誰來滅火！', '啊啊啊啊啊！']), 1.6);
     corpses.push({
       upd(dt) {
@@ -453,6 +467,7 @@ const DEATH = {
           p.x += Math.sin(heading) * 9 * dt; p.z += Math.cos(heading) * 9 * dt; pushOut(p, 0.4); a.root.rotation.y = heading;
           if (!a.def.fly && p.y > 0) p.y = Math.max(0, p.y - 8 * dt);
           a.mat.color.lerp(_c.set(0x1a1612), dt * 1.1);
+          if (A.wail) { wt -= dt; if (wt <= 0) { wt = rand(0.5, 0.9); cry(a, 'long', false); } }
           for (let i = 0; i < 2; i++) FX.puffs.spawn(p.x + rand(-0.4, 0.4), p.y + rand(0.2, a.H), p.z + rand(-0.4, 0.4), rand(-1, 1), rand(1, 3), rand(-1, 1), 0.3, rand(0.5, 0.9), rand(0.25, 0.5), 0xFFF2B0, 0xE8742A, 5, 2);
           spreadT -= dt;
           if (spreadT <= 0) { // 火會傳染
@@ -466,6 +481,36 @@ const DEATH = {
         } else if (t > run + 0.7) {
           for (let i = 0; i < 14; i++) FX.puffs.spawn(p.x + rand(-0.3, 0.3), p.y + rand(0.1, a.H), p.z + rand(-0.3, 0.3), rand(-3, 3), rand(0, 4), rand(-3, 3), 0.3, rand(0.6, 1.1), rand(0.5, 0.9), 0x2E2A1F, 0x6B6455, -3, 2);
           for (let i = 0; i < 9; i++) FX.scrap.spawn(p.x, p.y + rand(0.2, a.H), p.z, rand(-3, 3), rand(1, 5), rand(-3, 3), rand(0.12, 0.28), rand(4, 7), pick([0x15120f, 0x24211A]));
+          FX.decals.add(p.x, p.z, rand(1.8, 2.6), 0x24211A); S.thud();
+          return true;
+        }
+        return false;
+      },
+      end() { dispose(a); },
+    });
+  },
+  zap(a) { // 雷劈：僵直狂閃 → 焦炭 → 碎成灰
+    const p = a.root.position; let t = 0, ash = false;
+    a.mixer.timeScale = 0; a.mat.transparent = false; a.mat.opacity = 1; a.tilt.rotation.set(0, 0, 0);
+    if (!a.def.fly && p.y < 0.3) p.y = 0;
+    corpses.push({
+      upd(dt) {
+        t += dt;
+        if (t < 0.55) {
+          const on = Math.floor(t * 30) % 2;
+          a.mat.emissive.setRGB(on, on, on * 0.8); a.mat.color.set(on ? 0xffffff : 0x111111);
+          a.tilt.position.x = rand(-0.08, 0.08); a.tilt.scale.set(1 + rand(-0.06, 0.06), 1 + rand(0, 0.14), 1 + rand(-0.06, 0.06));
+          if (Math.random() < dt * 30) sparks(p.x, p.y + rand(0.2, a.H), p.z, 2);
+          return false;
+        }
+        if (!ash) {
+          ash = true; a.mat.emissive.setRGB(0, 0, 0); a.mat.color.set(0x15120f); a.tilt.position.x = 0; a.tilt.scale.setScalar(1);
+          for (let i = 0; i < 6; i++) FX.puffs.spawn(p.x, p.y + rand(0.3, a.H), p.z, rand(-1, 1), rand(1, 3), rand(-1, 1), 0.4, 1, rand(0.6, 1), 0x6B6455, 0x2E2A1F, 2, 2);
+        }
+        if (p.y > 0) p.y = Math.max(0, p.y - 14 * dt);
+        if (t > 1.5) {
+          for (let i = 0; i < 12; i++) FX.puffs.spawn(p.x + rand(-0.3, 0.3), p.y + rand(0.1, a.H), p.z + rand(-0.3, 0.3), rand(-3, 3), rand(0, 4), rand(-3, 3), 0.3, rand(0.6, 1.1), rand(0.5, 0.9), 0x2E2A1F, 0x6B6455, -3, 2);
+          for (let i = 0; i < 8; i++) FX.scrap.spawn(p.x, p.y + rand(0.2, a.H), p.z, rand(-3, 3), rand(1, 5), rand(-3, 3), rand(0.12, 0.28), rand(4, 7), pick([0x15120f, 0x24211A]));
           FX.decals.add(p.x, p.z, rand(1.8, 2.6), 0x24211A); S.thud();
           return true;
         }
