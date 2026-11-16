@@ -73,6 +73,15 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
 #boss .bar i{display:block;height:100%;background:var(--alert)}
 #vignette{position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 0 0 rgba(200,72,58,0);transition:box-shadow .3s}
 #vignette.rage{box-shadow:inset 0 0 160px 40px rgba(200,40,30,.55)}
+#vignette.frozen{box-shadow:inset 0 0 180px 50px rgba(70,130,160,.6)}
+#flash{position:fixed;inset:0;pointer-events:none;background:#EAF4F6;opacity:0}
+#buffs{position:absolute;left:20px;top:132px;display:flex;flex-direction:column;gap:7px}
+#buffs div{background:var(--paper-warm);border:2.5px solid #2E2A1F;border-radius:12px;padding:5px 12px 8px;font-size:16px;color:#17130A;box-shadow:0 3px 0 rgba(40,60,30,.25);min-width:176px}
+#buffs div b{font-weight:800} #buffs div i{display:block;height:7px;border-radius:4px;background:var(--matcha-deep);margin-top:5px}
+#wx{position:absolute;left:calc(50% + 96px);top:26px;height:38px;padding:0 14px;border-radius:19px;background:var(--paper-warm);border:2.5px solid #2E2A1F;box-shadow:0 3px 0 rgba(40,60,30,.25);display:flex;align-items:center;font-size:16px;font-weight:800;color:#211D12;white-space:nowrap}
+.pop.scream{font-size:26px;color:#E8523F;animation:shk .09s linear infinite}
+@keyframes shk{0%{margin-left:-3px}50%{margin-left:3px}100%{margin-left:-3px}}
+.btn.off{opacity:.6}
 #locks i{position:absolute;width:44px;height:44px;margin:-22px;border:3.5px solid var(--alert);border-radius:8px;transform:rotate(45deg);outline:2px solid var(--ink-line)}
 #gore i{position:absolute;opacity:.9;animation:drip 2.6s ease-in forwards}
 @keyframes drip{0%{transform:scale(.3);opacity:0}6%{transform:scale(1);opacity:.92}55%{opacity:.85}100%{transform:translateY(160px) scaleY(1.5);opacity:0}}
@@ -116,10 +125,13 @@ kbd{display:inline-block;background:var(--wheat);border:2.5px solid #2E2A1F;bord
 <div id="locks" class="layer"></div>
 <div id="gore" class="layer"></div>
 <div id="vignette"></div>
+<div id="flash"></div>
 
 <div id="hud" class="layer hidden">
   <div id="score-panel" class="panel"><small>清算分數</small><div id="score">0</div><div class="row">擊殺<b id="kills">0</b>最高連殺<b id="best">0</b></div></div>
   <div id="timer">3:00</div>
+  <div id="wx" class="hidden"></div>
+  <div id="buffs"></div>
   <div id="boss" class="panel hidden"><span id="boss-name"></span><div class="bar"><i></i></div></div>
   <div id="feed"></div>
   <div id="combo" class="hidden"><div id="combo-n"></div><div id="combo-x"></div><div id="combo-bar"><i></i></div></div>
@@ -139,10 +151,12 @@ kbd{display:inline-block;background:var(--wheat);border:2.5px solid #2E2A1F;bord
   <div class="btns">
     <button class="btn btn-primary" id="btn-score">考績結算<small>3 分鐘拚最高分</small></button>
     <button class="btn btn-secondary" id="btn-free">無限發洩<small>不計時，殺到爽</small></button>
+    <button class="btn btn-secondary" id="btn-wail">😱 慘叫版：開</button>
   </div>
   <div class="grid" id="wgrid"></div>
   <p class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>移動　<kbd>Shift</kbd>衝刺　<kbd>空白</kbd>跳　<kbd>左鍵</kbd>攻擊　<kbd>右鍵</kbd>踢飛<br>
-  <kbd>1</kbd>–<kbd>0</kbd>或<kbd>滾輪</kbd>換武器　<kbd>Q</kbd>暴怒模式　<kbd>M</kbd>靜音　<kbd>Esc</kbd>暫停</p>
+  <kbd>1</kbd>–<kbd>0</kbd>或<kbd>滾輪</kbd>換武器　<kbd>Q</kbd>暴怒模式　<kbd>C</kbd>慘叫開關　<kbd>M</kbd>靜音　<kbd>Esc</kbd>暫停</p>
+  <p class="note">🎁 島上藏著神秘禮物箱，撿到會有驚喜；打久了會變天下雨。還有幾個彩蛋，自己找。</p>
   <p class="note" id="hiscore"></p>
   <p class="note">島民全是 AI 做的 3D 模型，沒有任何動物（或同事）在製作過程中受傷。</p>
 </div></div>
