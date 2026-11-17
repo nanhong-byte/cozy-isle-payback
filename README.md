@@ -1,6 +1,6 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.svg">
-  <img src="assets/banner-light.svg" width="100%" alt="暖島清算日：十把武器、27 種絕招，追著島民跑的紓壓小遊戲">
+  <img src="assets/banner-light.svg" width="100%" alt="暖島清算日：十把武器、35 種絕招，追著島民跑的紓壓小遊戲">
 </picture>
 
 <h1 align="center">🔪 暖島清算日 COZY ISLE: PAYBACK</h1>
@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/狀態-可以玩-FDC302?style=flat-square&labelColor=161415" alt="狀態：可以玩">
-  <img src="https://img.shields.io/badge/版本-v1.2-F5F5F5?style=flat-square&labelColor=161415" alt="版本 v1.2">
+  <img src="https://img.shields.io/badge/版本-v1.3-F5F5F5?style=flat-square&labelColor=161415" alt="版本 v1.3">
   <img src="https://img.shields.io/badge/平台-電腦瀏覽器-F5F5F5?style=flat-square&labelColor=161415" alt="平台：電腦瀏覽器">
   <img src="https://img.shields.io/badge/引擎-Three.js-F5F5F5?style=flat-square&labelColor=161415" alt="引擎：Three.js">
 </p>
@@ -18,7 +18,7 @@
   <a href="#-這遊戲在幹嘛">這遊戲在幹嘛</a> •
   <a href="#-怎麼開始玩">怎麼開始玩</a> •
   <a href="#-十把武器">武器</a> •
-  <a href="#-禮物箱與-27-種絕招">絕招</a> •
+  <a href="#-禮物箱與-35-種絕招">絕招</a> •
   <a href="#-怎麼做出來的">怎麼做的</a> •
   <a href="#-常見問題">常見問題</a>
 </p>
@@ -59,12 +59,13 @@
 |---|---|---|
 | 🔪 | 十把武器 | 每把都有自己專屬的死法，不是換個外觀而已 |
 | 🐾 | 十種島民 | 各有職稱和口頭禪，場上最多同時 72 隻 |
-| 🎁 | 27 種絕招 | 變身怪獸、開跑車、氣功波、萬劍歸一、召喚喪屍 |
+| 🎁 | 35 種絕招 | 變身怪獸、開跑車、氣功波、大飛碟、年終獎金鯨魚 |
 | 🌧️ | 會變天 | 打到 1 分鐘開始下雨，2 分鐘轉雷雨，雷會幫你劈 |
 | 😱 | 慘叫版 | 每種死法配一種叫聲，可以關 |
 | 🏆 | 連殺與評等 | 連殺有倍率，結算給 D 到 SSS |
+| 🎖️ | 排行榜與稱號 | 從工單群島開就上全公司排行榜，依玩法給稱號 |
 
-<p align="center"><img src="assets/images/menu-framed.png" width="720" alt="主選單：考績結算、無限發洩、慘叫版三顆按鈕，下方列出十把武器與操作按鍵"></p>
+<p align="center"><img src="assets/images/menu-framed.png" width="720" alt="主選單：考績結算、無限發洩、慘叫版三顆按鈕，下面一排排行榜、更新公告、回工單群島，再下面是十把武器與操作按鍵"></p>
 
 ## 🚀 怎麼開始玩
 
@@ -86,7 +87,7 @@
 不需要安裝任何東西，也不需要網路。要分給同事，把整個 `dist` 資料夾（約 11 MB）傳過去就好。
 
 > [!TIP]
-> 想一次試完所有絕招，進「無限發洩」模式後按 <kbd>Tab</kbd>，27 招想玩哪個直接點。
+> 想一次試完所有絕招，進「無限發洩」模式後按 <kbd>Tab</kbd>，35 招想玩哪個直接點。
 
 ## 🎮 操作方式
 
@@ -168,7 +169,7 @@
 
 連殺每多一隻倍率加 0.1，最高 5 倍；3.2 秒內沒殺到下一隻就歸零。殺得夠多，左下角的暴怒量表會集滿，按 <kbd>Q</kbd> 進入 10 秒暴怒模式：全場慢動作、你的攻速加倍。
 
-<p align="center"><img src="assets/images/end-framed.png" width="640" alt="考績結算畫面：評等 SS，稱號暖島屠夫，下方列出分數、擊殺數、最高連殺與最愛武器"></p>
+<p align="center"><img src="assets/images/end-framed.png" width="640" alt="考績結算畫面：評等 A 火氣不小，下方列出分數、擊殺數、最高連殺、最愛武器，還有等級 3 與稱號「冷血殺手」"></p>
 
 <details>
 <summary><b>評等門檻</b></summary>
@@ -190,14 +191,18 @@
 
 **從南瓜工單群島的「放鬆小島」打開**，每一局的成績會用公司帳號記下來，排上全公司排行榜；直接開網址玩的話，只記在這台電腦。
 
-- **等級**：看累計擊殺數，殺越多等級越高。
+- **等級**：看累計擊殺數，殺越多等級越高（12 隻升 2 級、48 隻升 3 級，越後面越難升）。
 - **稱號**：看你怎麼玩來決定，例如「屠夫」「冷血殺手」「AKA SSS 殺人魔」「賽車高手」「超級賽亞人」「折磨大師」「智能殺手」「不是人」「魔王」，排行榜第一名是「究極殺人王」。
 - **一句描述**：依最愛武器給，例如用電鋸的會是「我是電鋸控，鮮血就是我的潤滑油」，用黑洞砲的是「宇宙大法師，黑洞就是拿來這樣玩的」。
 
 > [!NOTE]
 > **防沉迷**：連玩兩場還想開第三場（無限發洩每 3 分鐘算一場），會跳出「Yo Bro, 發洩完了吧~ 你該回島上囉」，30 分鐘內不能再開新局，工單群島的「開始玩」按鈕也會一起倒數。
 
+<p align="center"><img src="assets/images/limit-framed.png" width="640" alt="防沉迷畫面：鬧鐘圖示寫著該休息囉，紅字 Yo Bro, 發洩完了吧~ 你該回島上囉，下方倒數 30:00，兩顆按鈕回工單群島與回主選單"></p>
+
 隨時都能回工單群島：暫停畫面、結算畫面、主選單都有「🏝️ 回工單群島」，遊戲中按 <kbd>H</kbd> 也行。主選單另有「📜 更新公告」，記錄每一版加了什麼。
+
+<p align="center"><img src="assets/images/news-framed.png" width="640" alt="更新公告頁：v1.3 排行榜上線、老闆開始害怕，列出十條更新，下面接著 v1.2 絕招大放送"></p>
 
 ## 🌧️ 打久了會變天
 
@@ -224,7 +229,7 @@
 2. **絕招槽**：左下角那條，殺敵會累積，集滿按 <kbd>F</kbd> 隨機抽一招。
 3. **絕招選單**：無限發洩模式按 <kbd>Tab</kbd>，直接點想玩的。
 
-<p align="center"><img src="assets/images/picker-framed.png" width="720" alt="絕招選單：27 個按鈕排成六欄，每個按鈕有圖示、名稱與一句說明"></p>
+<p align="center"><img src="assets/images/picker-framed.png" width="720" alt="絕招選單：35 個按鈕排成六欄，每個按鈕有圖示、名稱與一句說明"></p>
 
 ### 最新加入的八招
 
@@ -241,17 +246,31 @@
 
 另外「粉紅追魂斬」丟出去會自己追人，「怨念氣功波」集氣後放 5 秒的粗光柱、終點大爆炸。
 
-### 會暫時取代手上武器的七招
+<p align="center"><img src="assets/images/robot-framed.png" width="720" alt="殺戮機器人：畫面下方左右兩管機槍，黃色彈道掃過前方，島民炸出血花，畫面顯示三連殺"></p>
 
-這七招發動後，手上的武器會先收起來，時間到自動換回。
+<p align="center"><img src="assets/images/ufo-framed.png" width="720" alt="大飛碟：一台綠色光束的飛碟浮在島民上空，紅色雷射往地面掃"></p>
+
+<table><tr>
+<td><img src="assets/images/tornado-framed.png" width="100%" alt="人事異動龍捲風：灰白色龍捲風在島上，島民被捲到半空中，畫面顯示 16 連殺"></td>
+<td><img src="assets/images/bowling-framed.png" width="100%" alt="巨型保齡球：一顆黑色大球滾過人群，滿地血漬，畫面顯示血流成河 8 連殺"></td>
+</tr><tr>
+<td align="center">🌪️ 人事異動龍捲風</td><td align="center">🎳 巨型保齡球</td>
+</tr></table>
+
+<p align="center"><img src="assets/images/mines-framed.png" width="720" alt="績效地雷陣：地雷連環爆，地上滿是血漬與黑色焦痕，畫面顯示 21 連殺"></p>
+
+### 會暫時取代手上武器的八招
+
+這八招發動後，手上的武器會先收起來，時間到自動換回。
 
 | 絕招 | 時間 | 怎麼用 |
 |---|:---:|---|
 | 🐲 怪獸變身 | 15 秒 | 左鍵揮爪大範圍撕碎，跳起來落地有震波 |
 | 🏎️ 公司跑車 | 14 秒 | 自動往前衝，滑鼠轉向，<kbd>S</kbd> 煞車；撞到的會飛出去當保齡球 |
 | 💪 充能臂砲 | 14 秒 | 按住左鍵蓄力，放開發射；滿蓄力會貫穿並爆炸 |
-| 👐 怨念氣功波 | 12 秒 | 按住左鍵集氣 0.7 秒，接著噴 2.6 秒光柱 |
-| 💿 圓鋸氣斬 | 13 秒 | 左鍵丟出會貫穿的圓盤，一路攔腰切過去 |
+| 👐 怨念氣功波 | 14 秒 | 按住左鍵集氣，放出 5 秒的粗光柱，終點一路爆炸 |
+| 💗 粉紅追魂斬 | 13 秒 | 左鍵丟出粉紅圓盤，會自己追人，切穿一隻再找下一隻 |
+| 🤖 殺戮機器人 | 15 秒 | 按住左鍵雙管機槍左右狂掃，右鍵發射火箭 |
 | ❄️ 寒冰劍 | 14 秒 | 揮劍凍成冰雕，再敲就碎；不敲 4–6 秒後也會自己碎 |
 | 🌩️ 連鎖閃電 | 12 秒 | 按住左鍵放電，電會自己跳到下一隻，最多 10 隻 |
 
@@ -334,7 +353,7 @@
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'PingFang TC, Microsoft JhengHei, Noto Sans TC, sans-serif','primaryColor':'#FFFFFF','primaryTextColor':'#161415','primaryBorderColor':'#161415','lineColor':'#8A6400','secondaryColor':'#FDE68A','tertiaryColor':'#F5F5F5','clusterBkg':'#F5F5F5','clusterBorder':'#D9D9D9','edgeLabelBackground':'#F5F5F5'}}}%%
 flowchart LR
   A["🐾 十隻島民的 3D 模型"] --> B["build_assets.py<br>貼圖縮小、轉成文字"] --> C["assets.js<br>約 10 MB"]
-  D["src/ 裡的 11 支程式"] --> E["esbuild 打包"] --> F["game.js<br>約 770 KB"]
+  D["src/ 裡的 15 支程式"] --> E["esbuild 打包"] --> F["game.js<br>約 800 KB"]
   C --> G["index.html"]
   F --> G
   G --> H["雙擊就能玩"]
@@ -370,13 +389,17 @@ npm run build
 | `src/main.js` | 啟動、鍵盤滑鼠、玩家移動、計分、主迴圈 |
 | `src/animals.js` | 島民的行為、受傷，以及十幾種死法 |
 | `src/weapons.js` | 十把武器 |
-| `src/powers.js` | 18 種絕招（變身、跑車、召喚物、劍陣） |
+| `src/powers.js` | 26 種絕招（變身、跑車、召喚物、劍陣、飛碟、鯨魚） |
 | `src/items.js` | 禮物箱、另外 9 種道具、金色島民、彩蛋 |
 | `src/weather.js` | 下雨、雷雨、閃電 |
 | `src/fx.js` | 血、肉塊、煙、爆炸、浮動文字 |
 | `src/audio.js` | 所有音效與配樂 |
 | `src/world.js` | 島、樹、房子、辦公桌 |
 | `src/ui.js` | 分數、連殺、選單、結算畫面 |
+| `src/titles.js` | 等級、稱號、依最愛武器給的一句描述 |
+| `src/limit.js` | 防沉迷：連玩兩場鎖 30 分鐘 |
+| `src/isles.js` | 跟南瓜工單群島溝通：回傳成績、收排行榜 |
+| `src/changelog.js` | 更新公告的內容，每出一版補一段 |
 | `tools/build_assets.py` | 把島民模型轉成 `dist/assets.js` |
 | `企劃.md` | 完整企劃 |
 
@@ -387,6 +410,7 @@ GAME.start('free');     // 開一局無限發洩
 GAME.give('beam');      // 直接拿到怨念氣功波
 GAME.weather(1, 1);     // 強制雷雨
 GAME.step(60);          // 快轉 60 格
+GAME.resetLimit();      // 清掉防沉迷的鎖（?debug 預設不鎖，要測鎖請用 ?debug&limit）
 ```
 
 </details>
