@@ -2,7 +2,8 @@
 // 遊戲是從群島的放鬆小島用 window.open 開的，所以 window.opener 就是群島分頁。
 // 有群島 → 成績送回群島存（公司帳號、全公司排行榜）；沒有群島（直接開網址）→ 只記在這台電腦。
 export const ISLES_URL = 'https://isles.pumpkinvrarai.com/app/';
-const ISLES_ORIGINS = ['https://isles.pumpkinvrarai.com', 'http://localhost:5180', 'http://127.0.0.1:5180', 'http://localhost:5173'];
+// 資安（docs/資安_ISO27001.md 第 10 節）：本機開發的群島網址只在本機開遊戲時才收
+const ISLES_ORIGINS = ['https://isles.pumpkinvrarai.com'].concat(/^(localhost|127.0.0.1)$/.test(location.hostname) ? ['http://localhost:5180', 'http://127.0.0.1:5180', 'http://localhost:5173'] : []);
 
 const listeners = [];
 export const Isles = { board: null, linked: false };

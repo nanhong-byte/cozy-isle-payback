@@ -6,15 +6,18 @@
   "scripts": {
     "build": "esbuild src/main.js --bundle --format=iife --minify --target=es2020 --outfile=dist/game.js",
     "dev": "esbuild src/main.js --bundle --format=iife --sourcemap --target=es2020 --outfile=dist/game.js",
-    "assets": "python tools/build_assets.py"
+    "assets": "python tools/build_assets.py",
+    "audit": "npm audit"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "esbuild": "^0.28.2",
-    "three": "^0.187.0"
+    "three": "0.187.0"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
 }
