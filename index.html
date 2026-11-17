@@ -126,6 +126,29 @@ kbd{display:inline-block;background:var(--wheat);border:2.5px solid #2E2A1F;bord
 .stats div b{display:block;font-size:30px;font-weight:800;color:var(--ink-forest)} .stats div small{font-size:14px;color:var(--text-soft)}
 #end-detail{font-size:16px;color:var(--text-soft);line-height:1.9;margin-top:8px}
 #pause .card{max-width:520px} #pause h1{font-size:44px}
+/* ── v1.3：回群島、排行榜、更新公告、防沉迷 ── */
+.btn-isles{background:#BFE3EC;color:#14323A;border-color:#2E2A1F;box-shadow:0 4px 0 rgba(40,60,30,.3)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none!important}
+.minis{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.mini{height:42px;padding:0 16px;border-radius:12px;border:2.5px solid #2E2A1F;background:var(--paper-warm);font-family:inherit;font-weight:800;font-size:16px;color:#233018;cursor:pointer;box-shadow:0 3px 0 rgba(40,60,30,.25)}
+.mini:hover{transform:translateY(-2px)} .mini.isles{background:#BFE3EC;color:#14323A}
+#lockmsg{margin-top:10px;font-size:16px;color:var(--alert)}
+#isles-hint{position:absolute;right:20px;bottom:100px;font-size:14px;color:var(--paper);-webkit-text-stroke:3px var(--ink-line);paint-order:stroke fill;letter-spacing:1px}
+#me-card{display:flex;gap:14px;align-items:center;text-align:left;background:var(--paper-warm);border:2.5px solid #CFC49E;border-radius:14px;padding:10px 14px;margin:14px 0 4px}
+#me-card .lv{flex:none;width:64px;height:64px;border-radius:50%;background:var(--ink-forest);color:var(--gold);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:24px;font-weight:800;line-height:1;border:3px solid var(--ink-line)}
+#me-card .lv small{font-size:11px;color:#B4C494;letter-spacing:1px}
+#me-card b{font-size:22px;color:var(--alert);letter-spacing:2px} #me-card p{font-size:15px;color:var(--text-soft);margin-top:3px}
+#board .card,#news .card{max-width:760px;max-height:calc(100vh - 40px);overflow:auto;padding:24px 30px}
+#board h1,#news h1,#limit h1{font-size:40px}
+.lb{width:100%;border-collapse:separate;border-spacing:0 6px;margin-top:8px;text-align:left;font-size:16px}
+.lb td{background:var(--paper-warm);padding:7px 10px} .lb td:first-child{border-radius:10px 0 0 10px;text-align:center;font-size:20px;width:46px} .lb td:last-child{border-radius:0 10px 10px 0;text-align:right}
+.lb tr.me td{background:#F6E7A8} .lb .t{display:block;color:var(--alert);font-size:13px} .lb .d{display:block;color:var(--text-soft);font-size:12px;font-weight:700}
+.lb .n{font-size:20px;color:var(--ink-forest)}
+.news-v{text-align:left;margin-top:14px;background:var(--paper-warm);border:2.5px solid #CFC49E;border-radius:14px;padding:12px 16px}
+.news-v h3{font-size:19px;color:var(--ink-forest)} .news-v h3 small{font-size:13px;color:var(--moss);margin-left:8px}
+.news-v ul{margin:6px 0 0 20px;font-size:15px;line-height:1.75;color:var(--text)}
+#limit .card{max-width:600px} #limit .yo{font-size:44px;color:var(--alert);letter-spacing:2px;line-height:1.25;margin:6px 0 10px}
+#limit .left{font-size:46px;color:var(--ink-forest);letter-spacing:4px}
 </style>
 </head>
 <body>
@@ -151,6 +174,7 @@ kbd{display:inline-block;background:var(--wheat);border:2.5px solid #2E2A1F;bord
   <div id="wname"><b></b><small></small></div>
   <div id="weapons" class="panel"></div>
   <div id="ammo" class="panel hidden"></div>
+  <div id="isles-hint">H　回工單群島</div>
 </div>
 
 <div id="loading" class="screen"><div class="card"><h1 style="font-size:40px">暖島<span>清算日</span></h1><p class="sub" id="loadtxt">島民正在搭船過來…</p><div id="loadbar"><i></i></div></div></div>
@@ -163,10 +187,12 @@ kbd{display:inline-block;background:var(--wheat);border:2.5px solid #2E2A1F;bord
     <button class="btn btn-secondary" id="btn-free">無限發洩<small>不計時，殺到爽</small></button>
     <button class="btn btn-secondary" id="btn-wail">😱 慘叫版：開</button>
   </div>
+  <p id="lockmsg" class="hidden"></p>
+  <div class="minis"><button class="mini" id="btn-board">🏆 排行榜</button><button class="mini" id="btn-news">📜 更新公告</button><button class="mini isles" id="btn-isles-m">🏝️ 回工單群島</button></div>
   <div class="grid" id="wgrid"></div>
   <p class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>移動　<kbd>Shift</kbd>衝刺　<kbd>空白</kbd>跳　<kbd>左鍵</kbd>攻擊　<kbd>右鍵</kbd>踢飛<br>
-  <kbd>1</kbd>–<kbd>0</kbd>或<kbd>滾輪</kbd>換武器　<kbd>Q</kbd>暴怒模式　<kbd>F</kbd>抽絕招　<kbd>Tab</kbd>絕招選單（無限發洩）　<kbd>C</kbd>慘叫開關　<kbd>M</kbd>靜音　<kbd>Esc</kbd>暫停</p>
-  <p class="note">🎁 島上藏著神秘禮物箱，共 27 種絕招：變身、跑車、氣功波、萬劍歸一、召喚喪屍…撿到就知道。打久了會變天下雨，還有幾個彩蛋自己找。</p>
+  <kbd>1</kbd>–<kbd>0</kbd>或<kbd>滾輪</kbd>換武器　<kbd>Q</kbd>暴怒模式　<kbd>F</kbd>抽絕招　<kbd>Tab</kbd>絕招選單（無限發洩）　<kbd>C</kbd>慘叫開關　<kbd>M</kbd>靜音　<kbd>Esc</kbd>暫停　<kbd>H</kbd>回工單群島</p>
+  <p class="note">🎁 島上藏著神秘禮物箱，共 <span id="power-n">35</span> 種絕招：怪獸／機器人變身、大飛碟、氣功波、年終獎金鯨魚、萬劍歸一…撿到就知道。打久了會變天下雨，還有幾個彩蛋自己找。</p>
   <p class="note" id="hiscore"></p>
   <p class="note">島民全是 AI 做的 3D 模型，沒有任何動物（或同事）在製作過程中受傷。</p>
 </div></div>
@@ -174,6 +200,7 @@ kbd{display:inline-block;background:var(--wheat);border:2.5px solid #2E2A1F;bord
 <div id="pause" class="screen hidden"><div class="card">
   <h1>喘口氣</h1><p class="sub">島民正在趁機逃跑</p>
   <div class="btns"><button class="btn btn-primary" id="btn-resume">繼續清算</button><button class="btn btn-secondary" id="btn-quit">回主選單</button></div>
+  <div class="minis"><button class="mini isles" id="btn-isles-p">🏝️ 回工單群島</button></div>
 </div></div>
 
 <div id="picker" class="screen hidden"><div class="card">
@@ -185,8 +212,31 @@ kbd{display:inline-block;background:var(--wheat);border:2.5px solid #2E2A1F;bord
 <div id="end" class="screen hidden"><div class="card">
   <h2>考績結算</h2><div id="rank">S</div><div id="rank-t"></div>
   <div class="stats"><div><b id="e-score">0</b><small>清算分數</small></div><div><b id="e-kills">0</b><small>擊殺</small></div><div><b id="e-combo">0</b><small>最高連殺</small></div><div><b id="e-fav">-</b><small>最愛武器</small></div></div>
+  <div id="me-card"></div>
   <p id="end-detail"></p>
-  <div class="btns"><button class="btn btn-primary" id="btn-again">再清算一次</button><button class="btn btn-secondary" id="btn-menu">回主選單</button></div>
+  <div class="btns"><button class="btn btn-primary" id="btn-again">再清算一次</button><button class="btn btn-secondary" id="btn-menu">回主選單</button><button class="btn btn-isles" id="btn-isles-e">🏝️ 回工單群島</button></div>
+  <div class="minis"><button class="mini" id="btn-board-e">🏆 看排行榜</button></div>
+</div></div>
+
+<div id="board" class="screen hidden"><div class="card">
+  <h1>🏆 排行榜</h1><p class="sub" id="board-sub" style="margin:4px 0 0"></p>
+  <div id="board-me"></div>
+  <table class="lb"><tbody id="board-rows"></tbody></table>
+  <div class="btns"><button class="btn btn-secondary" id="btn-board-close">回去</button></div>
+</div></div>
+
+<div id="news" class="screen hidden"><div class="card">
+  <h1>📜 更新公告</h1><p class="sub" style="margin:4px 0 0">島上又多了什麼可怕的東西</p>
+  <div id="news-list"></div>
+  <div class="btns"><button class="btn btn-secondary" id="btn-news-close">回去</button></div>
+</div></div>
+
+<div id="limit" class="screen hidden"><div class="card">
+  <h1>⏰ 該休息囉</h1>
+  <p class="yo">Yo Bro, 發洩完了吧~<br>你該回島上囉</p>
+  <p class="sub" style="margin:0">島民需要時間重新長出來，30 分鐘後再來</p>
+  <div class="left" id="limit-left">30:00</div>
+  <div class="btns"><button class="btn btn-isles" id="btn-isles-l">🏝️ 回工單群島</button><button class="btn btn-secondary" id="btn-limit-menu">回主選單</button></div>
 </div></div>
 
 <script src="assets.js"></script>
