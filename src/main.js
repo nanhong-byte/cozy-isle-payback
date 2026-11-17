@@ -1,7 +1,7 @@
 // 《暖島清算日》主程式：啟動、輸入、玩家、計分、生怪、主迴圈
 import * as THREE from 'three';
 import { G, R_ISLAND, rand, pick, lerp, V } from './state.js';
-import { initAudio, S, A, setMuted, stopAllLoops } from './audio.js';
+import { initAudio, S, A, setMuted, stopAllLoops, carSong } from './audio.js';
 import { initFX, updateFX, resizeFX, clearFX, popup, shake } from './fx.js';
 import { buildWorld, updateWorld } from './world.js';
 import { loadAnimals, updateAnimals, spawnRandom, spawnBoss, clearAnimals, DEATH_TEXT } from './animals.js';
@@ -79,18 +79,18 @@ function start(mode) {
   lock();
 }
 function lock() { if (canvas.requestPointerLock && !debug) { try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* 忽略 */ } } }
-function pause() { if (G.mode !== 'score' && G.mode !== 'free') return; G.paused = true; stopAllLoops(); G.input.fire = false; UI.show('pause'); }
-function resume() { picking = false; G.paused = false; UI.show('hud'); lock(); }
+function pause() { if (G.mode !== 'score' && G.mode !== 'free') return; G.paused = true; A.hold = true; stopAllLoops(); G.input.fire = false; UI.show('pause'); }
+function resume() { picking = false; G.paused = false; A.hold = false; UI.show('hud'); lock(); }
 // 無限發洩模式：按 Tab 開絕招選單，想玩哪招直接點
 function openPicker() {
   if (G.mode !== 'free' || G.paused) return;
-  picking = true; G.paused = true; stopAllLoops(); G.input.fire = false; UI.show('picker');
+  picking = true; G.paused = true; A.hold = true; stopAllLoops(); G.input.fire = false; UI.show('picker');
   if (document.pointerLockElement) document.exitPointerLock();
 }
 function pickPower(id) { resume(); if (id) give(id); }
 function ult() { if (G.ult < 1) return; G.ult = 0; give(); }
 function endGame() {
-  const mode = G.mode; G.mode = 'end'; stopAllLoops(); G.input.fire = false;
+  const mode = G.mode; G.mode = 'end'; carSong(false); stopAllLoops(); G.input.fire = false;
   if (document.pointerLockElement) document.exitPointerLock();
   let hi = 0; try { hi = +localStorage.getItem('cozy-payback-hi') || 0; } catch (e) { /* 忽略 */ }
   G.stats.newHigh = mode === 'score' && G.score > hi;

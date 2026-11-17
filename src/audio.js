@@ -3,7 +3,7 @@ import { rand } from './state.js';
 
 let ctx = null, master, sfx, music, noiseBuf;
 const last = {};
-export const A = { muted: false, tempo: 1, wail: true };
+export const A = { muted: false, tempo: 1, wail: true, hold: false };
 let voices = 0;
 
 export function initAudio() {
@@ -261,4 +261,71 @@ function startMusic() {
       step++; nextT += e;
     }
   }, 60);
+}
+
+// ── 公司跑車專用曲（原創，150 BPM 熱血飆車風，約 24 秒，最後 4 秒淡出）──
+// 拿到跑車就蓋掉原本配樂；暫停時停住、繼續時接著放；跑車結束或回主選單就收掉。
+const DR_BPM = 150, DR_BARS = 15, DR_FADE = 2.5; // 15 小節 × 1.6 秒 = 24 秒；最後 2.5 小節（4 秒）淡出
+const DR_ROOT = [45, 41, 43, 48, 45, 41, 43, 40]; // Am F G C Am F G E
+const DR_CH = [[57, 60, 64], [53, 57, 60], [55, 59, 62], [55, 60, 64], [57, 60, 64], [53, 57, 60], [55, 59, 62], [56, 59, 64]];
+const DR_MEL = [
+  81, 0, 79, 81, 84, 81, 79, 76, 77, 0, 76, 77, 81, 77, 76, 72,
+  79, 0, 77, 79, 83, 79, 77, 74, 76, 79, 84, 0, 83, 0, 79, 0,
+  81, 81, 84, 81, 88, 0, 86, 84, 81, 0, 84, 0, 89, 88, 86, 84,
+  83, 0, 86, 0, 91, 0, 86, 83, 80, 0, 83, 0, 88, 0, 86, 83,
+];
+let drive = null, dTimer = 0;
+function dNote(type, m, t, dur, vol, dest, det = 0) {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type; o.frequency.value = mf(m); o.detune.value = det;
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(dest); o.start(t); o.stop(t + dur + 0.03);
+}
+export function carSong(on) {
+  if (!ctx) return;
+  if (!on) {
+    if (!drive) return;
+    clearInterval(dTimer); const d = drive; drive = null; A.hold = false;
+    d.out.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.15); setTimeout(() => d.out.disconnect(), 1500);
+    music.gain.setTargetAtTime(0.16, ctx.currentTime, 0.4); return;
+  }
+  carSong(false);
+  const out = ctx.createGain(); out.gain.value = 0.5; out.connect(master);
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; lp.Q.value = 4; lp.connect(out); // 貝斯
+  drive = { out, lp, step: 0, next: ctx.currentTime + 0.05 };
+  music.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.08);
+  const total = DR_BARS * 16, fadeFrom = (DR_BARS - DR_FADE) * 16, s16 = 60 / DR_BPM / 4;
+  dTimer = setInterval(() => {
+    const d = drive; if (!d || ctx.state !== 'running') return;
+    if (A.hold) { d.next = ctx.currentTime + 0.05; return; }
+    if (d.next < ctx.currentTime) d.next = ctx.currentTime + 0.03;
+    while (d.next < ctx.currentTime + 0.2) {
+      const i = d.step, t = d.next;
+      if (i >= total) { const dd = drive; drive = null; clearInterval(dTimer); setTimeout(() => dd.out.disconnect(), 800); music.gain.setTargetAtTime(0.16, ctx.currentTime, 0.6); return; }
+      const k = i < fadeFrom ? 1 : Math.max(0.0005, 1 - (i - fadeFrom) / (total - fadeFrom)) ** 1.5; // 淡出
+      const intro = i < 16; // 第一小節：只有鼓跟往上衝的音，像踩油門
+      const bar = intro ? 0 : ((i >> 4) - 1) % 8, s = i % 16, ch = DR_CH[bar];
+      if (s % 4 === 0) { // 大鼓四拍
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12);
+        g.gain.setValueAtTime(0.9 * k, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+        o.connect(g); g.connect(d.out); o.start(t); o.stop(t + 0.18);
+      }
+      if (s === 4 || s === 12) nz(0.14, 0.5 * k, 2600, 900, 'bandpass', t - ctx.currentTime, 0.8, d.out); // 小鼓
+      if (s % 2 === 1) nz(0.03, 0.22 * k, 9000, 7000, 'highpass', t - ctx.currentTime, 0.7, d.out); // 開放鈸
+      if (intro) {
+        if (s === 0) { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sawtooth';
+          o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(880, t + s16 * 16);
+          g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + s16 * 15); g.gain.exponentialRampToValueAtTime(0.0001, t + s16 * 16);
+          o.connect(g); g.connect(d.out); o.start(t); o.stop(t + s16 * 16 + 0.05); }
+      } else {
+        const r = DR_ROOT[bar] - 12 + (s % 2 ? 12 : 0); // 八度跳躍貝斯（飆車曲的招牌）
+        dNote('sawtooth', r, t, s16 * 0.9, 0.55 * k, d.lp);
+        if (s === 2 || s === 6 || s === 10 || s === 14) for (const m of ch) { dNote('sawtooth', m, t, s16 * 1.4, 0.07 * k, d.out, -8); dNote('sawtooth', m, t, s16 * 1.4, 0.07 * k, d.out, 8); }
+        if (s % 2 === 0) { const m = DR_MEL[bar * 8 + (s >> 1)]; if (m) { dNote('square', m, t, s16 * 1.8, 0.13 * k, d.out, -6); dNote('sawtooth', m, t, s16 * 1.8, 0.1 * k, d.out, 7); } }
+      }
+      d.step++; d.next += s16;
+    }
+  }, 50);
 }

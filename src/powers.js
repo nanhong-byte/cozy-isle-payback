@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { G, R_ISLAND, rand, pick, clamp, V, after } from './state.js';
 import { FX, ring, shake, sparks, dust, tracer } from './fx.js';
-import { S, loop, stopAllLoops } from './audio.js';
+import { S, loop, stopAllLoops, carSong } from './audio.js';
 import { damage, kill, makeBody, freeBody, randomKey, spawnRandom } from './animals.js';
 import { UI } from './ui.js';
 import { explode } from './weapons.js';
@@ -11,7 +11,7 @@ import { strike } from './weather.js';
 
 export const POWERS = [
   { id: 'beast', icon: '🐲', name: '怪獸變身', tip: '左鍵揮爪，跳起來落地有震波', dur: 15, w: 2 },
-  { id: 'car', icon: '🏎️', name: '公司跑車', tip: '自動往前衝，滑鼠轉向，撞就對了', dur: 14, w: 2 },
+  { id: 'car', icon: '🏎️', name: '公司跑車', tip: '自動往前衝，撞就對了，還附飆車曲', dur: 30, w: 2 },
   { id: 'cannon', icon: '💪', name: '充能臂砲', tip: '按住左鍵蓄力，放開發射', dur: 14, w: 2 },
   { id: 'beam', icon: '👐', name: '怨念氣功波', tip: '按住左鍵集氣，放出 5 秒的巨大光柱', dur: 14, w: 2 },
   { id: 'disc', icon: '💗', name: '粉紅追魂斬', tip: '丟出去會自己追人，切穿一隻再找下一隻', dur: 13, w: 2 },
@@ -109,6 +109,7 @@ export function initPowers() {
 }
 
 function setOverride(id) {
+  if (id === 'car') carSong(true); else if (G.override === 'car') carSong(false);
   G.override = id; ovm.visible = !!id;
   for (const k in vms) vms[k].visible = k === id;
   G.camera.children.forEach((c) => { if (c !== ovm) c.visible = !id; });
@@ -116,6 +117,7 @@ function setOverride(id) {
   charge = 0; beamOn = 0; cd = 0.25; swing = 0; stopAllLoops();
 }
 export function resetPowers() {
+  carSong(false);
   ents.forEach((e) => e.end()); ents.length = 0; zCount = 0;
   G.override = null; G.spMul = 1; G.fovAdd = 0;
   if (ovm) { ovm.visible = false; for (const k in vms) vms[k].visible = false; }

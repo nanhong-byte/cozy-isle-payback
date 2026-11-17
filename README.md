@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/狀態-可以玩-FDC302?style=flat-square&labelColor=161415" alt="狀態：可以玩">
-  <img src="https://img.shields.io/badge/版本-v1.3-F5F5F5?style=flat-square&labelColor=161415" alt="版本 v1.3">
+  <img src="https://img.shields.io/badge/版本-v1.3.1-F5F5F5?style=flat-square&labelColor=161415" alt="版本 v1.3.1">
   <img src="https://img.shields.io/badge/平台-電腦瀏覽器-F5F5F5?style=flat-square&labelColor=161415" alt="平台：電腦瀏覽器">
   <img src="https://img.shields.io/badge/引擎-Three.js-F5F5F5?style=flat-square&labelColor=161415" alt="引擎：Three.js">
 </p>
@@ -257,6 +257,15 @@
 <td align="center">🌪️ 人事異動龍捲風</td><td align="center">🎳 巨型保齡球</td>
 </tr></table>
 
+<table><tr>
+<td><img src="assets/images/whale-framed.png" width="100%" alt="年終獎金鯨魚：一隻藍色大鯨魚從天上掉下來，正下方是一群島民"></td>
+<td><img src="assets/images/whale-land-framed.png" width="100%" alt="鯨魚落地壓扁一片，畫面顯示一次 12 隻、12 連殺"></td>
+</tr><tr>
+<td align="center">🐋 年終獎金鯨魚：掉下來……</td><td align="center">……一次壓扁 12 隻</td>
+</tr></table>
+
+<p align="center"><img src="assets/images/firework-framed.png" width="720" alt="下班煙火秀：一整排島民綁著沖天炮升空，身後拖著橘色火花尾巴"></p>
+
 <p align="center"><img src="assets/images/mines-framed.png" width="720" alt="績效地雷陣：地雷連環爆，地上滿是血漬與黑色焦痕，畫面顯示 21 連殺"></p>
 
 ### 會暫時取代手上武器的八招
@@ -266,7 +275,7 @@
 | 絕招 | 時間 | 怎麼用 |
 |---|:---:|---|
 | 🐲 怪獸變身 | 15 秒 | 左鍵揮爪大範圍撕碎，跳起來落地有震波 |
-| 🏎️ 公司跑車 | 14 秒 | 自動往前衝，滑鼠轉向，<kbd>S</kbd> 煞車；撞到的會飛出去當保齡球 |
+| 🏎️ 公司跑車 | 30 秒 | 自動往前衝，滑鼠轉向，<kbd>S</kbd> 煞車；撞到的會飛出去當保齡球。上車會放一段 24 秒的專屬飆車曲 |
 | 💪 充能臂砲 | 14 秒 | 按住左鍵蓄力，放開發射；滿蓄力會貫穿並爆炸 |
 | 👐 怨念氣功波 | 14 秒 | 按住左鍵集氣，放出 5 秒的粗光柱，終點一路爆炸 |
 | 💗 粉紅追魂斬 | 13 秒 | 左鍵丟出粉紅圓盤，會自己追人，切穿一隻再找下一隻 |
@@ -479,6 +488,7 @@ GAME.resetLimit();      // 清掉防沉迷的鎖（?debug 預設不鎖，要測�
 - [x] v1.1　慘叫版、下雨與雷雨、禮物箱、彩蛋
 - [x] v1.2　18 種新絕招、絕招槽、絕招選單、敵人加量
 - [x] v1.3　排行榜、稱號、防沉迷、回工單群島、八個新絕招、更新公告
+- [x] v1.3.1　公司跑車加長到 30 秒，附原創飆車曲
 - [ ] 重新調整絕招強度與評等門檻
 - [ ] 實機錄一段示範影片
 
