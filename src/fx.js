@@ -182,7 +182,7 @@ export function initFX() {
   const basic = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const lam = new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true });
   FX.decals = new Decals(700);
-  FX.blood = new Debris(new THREE.IcosahedronGeometry(0.5, 0), basic, 1400, {
+  FX.blood = new Debris(new THREE.IcosahedronGeometry(0.5, 0), basic, 3200, {
     g: 24, drag: 0.4, die: true,
     onGround: (x, z, vy, size) => { if (Math.random() < 0.34) FX.decals.add(x, z, size * rand(3.5, 8), FX._bc || pick(BLOOD), true); },
   });
@@ -264,6 +264,7 @@ export function tracer(a, b, color = 0xFFE58A, w = 0.035, life = 0.055) {
 }
 // 噴血：方向 (dx,dy,dz)×speed，再加上隨機散射
 export function blood(x, y, z, dx, dy, dz, n, speed, oil = false, spread = 0.65) {
+  n = Math.round(n * 2.2); speed *= 1.15; // v1.3：南瓜說血要噴多一點
   const pool = oil ? FX.oil : FX.blood, cols = oil ? OIL : BLOOD;
   for (let i = 0; i < n; i++) {
     const s = speed * rand(0.35, 1.1);

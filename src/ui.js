@@ -2,6 +2,10 @@
 import * as THREE from 'three';
 import { G } from './state.js';
 import { WEAPONS, W } from './weapons.js';
+import { NAMES, level } from './titles.js';
+import { CHANGELOG } from './changelog.js';
+import { LIMIT_LINE, fmtLeft } from './limit.js';
+const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 const $ = (id) => document.getElementById(id);
 const _v = new THREE.Vector3();
@@ -21,6 +25,13 @@ UI.init = (h) => {
   $('pgrid').innerHTML = Object.values(G.itemDefs).map((it) => `<button data-id="${it.id}"><b>${it.icon}</b>${it.name}<small>${it.tip}</small></button>`).join('');
   $('pgrid').onclick = (e) => { const b = e.target.closest('button'); if (b) h.pick(b.dataset.id); };
   $('btn-pclose').onclick = () => h.pick(null);
+  ['btn-isles-m', 'btn-isles-p', 'btn-isles-e', 'btn-isles-l'].forEach((id) => ($(id).onclick = () => h.isles()));
+  $('btn-board').onclick = $('btn-board-e').onclick = () => UI.overlay('board');
+  $('btn-news').onclick = () => UI.overlay('news');
+  $('btn-board-close').onclick = $('btn-news-close').onclick = () => UI.show(back);
+  $('btn-limit-menu').onclick = () => h.menu();
+  $('news-list').innerHTML = CHANGELOG.map((c) => `<div class="news-v"><h3>${c.v}　${esc(c.title)}<small>${c.date}</small></h3><ul>${c.items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('');
+  $('power-n').textContent = Object.keys(G.itemDefs).length;
   UI.hiscore();
 };
 UI.hiscore = () => {
@@ -30,8 +41,11 @@ UI.hiscore = () => {
 };
 UI.wail = (on) => { $('btn-wail').innerHTML = `😱 慘叫版：${on ? '開' : '關'}<small>${on ? '島民會叫得很慘' : '只有原本的小叫聲'}</small>`; $('btn-wail').classList.toggle('off', !on); };
 UI.loading = (p) => { $('loadbar').firstElementChild.style.width = Math.round(p * 100) + '%'; };
+let back = 'menu', cur = 'loading';
+UI.overlay = (name) => { back = cur === 'board' || cur === 'news' ? back : cur; UI.show(name); };
 UI.show = (name) => {
-  ['loading', 'menu', 'pause', 'end', 'picker'].forEach((s) => $(s).classList.toggle('hidden', s !== name));
+  cur = name;
+  ['loading', 'menu', 'pause', 'end', 'picker', 'board', 'news', 'limit'].forEach((s) => $(s).classList.toggle('hidden', s !== name));
   $('hud').classList.toggle('hidden', !(name === 'hud' || name === 'pause' || name === 'picker'));
 };
 UI.reset = () => { $('feed').innerHTML = ''; $('announce').innerHTML = ''; $('locks').innerHTML = ''; lockEls = []; lastCombo = 0; lastW = -1; lastBuff = ''; lastWx = -1; $('buffs').innerHTML = ''; $('wx').classList.add('hidden'); $('combo').classList.add('hidden'); $('boss').classList.add('hidden'); };
@@ -113,10 +127,30 @@ UI.end = (st) => {
   $('rank').textContent = r[1]; $('rank-t').textContent = r[2];
   $('e-score').textContent = Math.floor(G.score).toLocaleString(); $('e-kills').textContent = G.kills; $('e-combo').textContent = G.bestCombo;
   let fav = '-', fm = 0; for (const k in st.byWeapon) if (st.byWeapon[k] > fm) { fm = st.byWeapon[k]; fav = k; }
-  const names = { beast: '怪獸爪', car: '跑車', cannon: '充能臂砲', beam: '氣功波', disc: '圓鋸氣斬', ice: '寒冰劍', chain: '連鎖閃電', wolf: '野獸', robodog: '機器狗', zombie: '喪屍', turret: '砲塔', drone: '無人機', speed: '極速', scythe: '鐮刀', sword: '飛劍', bubble: '泡泡球', barrel: '瓦斯桶', kick: '踢飛', thunder: '雷劈', stomp: '巨人腳', nuke: '全島資遣令', meteor: '隕石雨', balloon: '氦氣彈', pumpkin: '南瓜神' }; WEAPONS.forEach((w) => (names[w.id] = w.name));
-  $('e-fav').textContent = names[fav] || '-';
+  $('e-fav').textContent = NAMES[fav] || '-';
   let vic = '', vm = 0; for (const k in st.byVictim) if (st.byVictim[k] > vm) { vm = st.byVictim[k]; vic = k; }
   const hi = st.newHigh ? '　🏆 刷新本機紀錄！' : '';
   $('end-detail').innerHTML = `爆頭 ${st.head}　·　空中擊殺 ${st.air}　·　一石多鳥 ${st.multi} 次　·　巨大島民 ${st.boss}　·　隱藏道具 ${st.items || 0}<br>${vic ? `最常被清算的是 <b>${vic}</b>（${vm} 次）` : ''}${hi}`;
   UI.show('end');
+};
+UI.favOf = (st) => { let fav = '', fm = 0; for (const k in st.byWeapon) if (st.byWeapon[k] > fm) { fm = st.byWeapon[k]; fav = k; } return fav; };
+UI.rankOf = (score) => RANKS.find((x) => score >= x[0])[1];
+// 結算畫面上的「我的稱號」
+UI.meCard = (t, tot) => {
+  $('me-card').innerHTML = `<div class="lv"><small>LV</small>${t.level}</div><div><b>「${esc(t.title)}」</b><p>${esc(t.blurb)}</p><p>累計擊殺 ${tot.kills.toLocaleString()}　·　玩了 ${tot.plays} 場　·　考績最高 ${tot.best.toLocaleString()}</p></div>`;
+};
+// 排行榜：有從群島開＝全公司；沒有＝只有這台電腦
+UI.board = (board, local) => {
+  const rows = board ? board.rows : local ? [local] : [];
+  $('board-sub').textContent = board ? (board.live ? '全公司（公司帳號登入）' : '示範島的排行榜（假資料）') : '只有這台電腦的紀錄｜從工單群島的放鬆小島打開，才會上全公司排行榜';
+  const medal = (i) => ['🥇', '🥈', '🥉'][i] || i + 1;
+  $('board-rows').innerHTML = rows.length ? rows.map((r, i) => `<tr class="${r.me ? 'me' : ''}"><td>${medal(i)}</td><td><span class="n">${esc(r.name)}</span> <small>LV ${level(r.kills)}</small><span class="t">「${esc(r.title || '新人殺手')}」</span><span class="d">${esc(r.blurb || '')}</span></td><td><b>${r.best.toLocaleString()}</b><span class="d">擊殺 ${r.kills.toLocaleString()}　·　${r.plays} 場</span></td></tr>`).join('')
+    : '<tr><td colspan="3" style="text-align:center;border-radius:10px">還沒有人上榜。島民們暫時很安全。</td></tr>';
+  $('board-me').innerHTML = '';
+};
+// 防沉迷：主選單的開始按鈕鎖住＋倒數
+UI.lock = (ms) => {
+  const on = ms > 0; $('btn-score').disabled = $('btn-free').disabled = on;
+  const m = $('lockmsg'); m.classList.toggle('hidden', !on); if (on) m.textContent = `${LIMIT_LINE}　還要 ${fmtLeft(ms)} 才能再開`;
+  $('limit-left').textContent = fmtLeft(ms);
 };

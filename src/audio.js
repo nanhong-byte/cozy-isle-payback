@@ -162,7 +162,7 @@ S.honk = () => { if (!ok('honk', 200)) return; osc('square', 392, 392, 0.3, 0.2)
 S.ice = () => { if (!ok('ice', 60)) return; osc('sine', 2600, 1700, 0.12, 0.2); osc('triangle', 3400, 2200, 0.16, 0.14, 0.03); nz(0.18, 0.3, 9000, 4000, 'highpass'); };
 S.boing = () => { if (!ok('boing', 90)) return; osc('sine', 180, 520, 0.16, 0.4); };
 S.cannon = (c = 0) => { osc('square', 900 - c * 400, 160, 0.14 + c * 0.2, 0.25 + c * 0.2); nz(0.12 + c * 0.3, 0.3 + c * 0.3, 3000, 400); };
-S.beam = () => { osc('sawtooth', 180, 720, 2.6, 0.22); osc('sine', 90, 60, 2.6, 0.5); nz(2.6, 0.5, 700, 3200, 'bandpass', 0, 0.8); };
+S.beam = (d = 2.6) => { osc('sawtooth', 180, 720, d, 0.22); osc('sine', 90, 60, d, 0.5); nz(d, 0.5, 700, 3200, 'bandpass', 0, 0.8); };
 S.rise = () => { osc('triangle', 220, 880, 0.5, 0.25); nz(0.5, 0.2, 400, 4000, 'bandpass', 0, 1); };
 
 // 持續音（電鋸、噴火、黑洞）

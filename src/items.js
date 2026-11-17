@@ -150,7 +150,7 @@ export function updateItems(dt, wdt) {
   const P = G.player, B = G.buff, pp = P.pos;
   for (const id in B) { B[id] -= dt; if (B[id] <= 0) { delete B[id]; endBuff(id); } }
   updatePowers(dt, wdt);
-  G.eyeK += ((B.giant > 0 ? 2.3 : B.beast > 0 ? 1.5 : 1) - G.eyeK) * Math.min(1, dt * 5);
+  G.eyeK += ((B.giant > 0 ? 2.3 : B.robot > 0 ? 1.75 : B.beast > 0 ? 1.5 : 1) - G.eyeK) * Math.min(1, dt * 5);
   if (B.nuke > 0) { const n = Math.ceil(B.nuke * 2); if (n !== tickN) { tickN = n; S.tick(); } }
 
   // 禮物箱：定時空投＋撿取

@@ -9,6 +9,9 @@ import { initWeapons, updateWeapons, selectWeapon, resetWeapons, WEAPONS, W } fr
 import { UI } from './ui.js';
 import { initWeather, updateWeather, resetWeather, setWeather, strike } from './weather.js';
 import { initItems, updateItems, resetItems, placeHidden, give, itemOnKill } from './items.js';
+import { initIsles, Isles, reportRound, reportLock, backToIsles } from './isles.js';
+import { tryStart, endRound, freeOver, lockNow, lockLeft, resetLimit } from './limit.js';
+import { titleFor } from './titles.js';
 
 const canvas = document.getElementById('game');
 const keys = {};
@@ -28,7 +31,10 @@ async function boot() {
   G.camera = new THREE.PerspectiveCamera(78, innerWidth / innerHeight, 0.05, 900);
   G.camera.rotation.order = 'YXZ'; G.scene.add(G.camera);
   buildWorld(); initFX(); initWeapons(); initWeather(); initItems();
-  UI.init({ start, resume, menu: toMenu, wail: toggleWail, pick: pickPower }); UI.wail(A.wail);
+  UI.init({ start, resume, menu: toMenu, wail: toggleWail, pick: pickPower, isles: goIsles }); UI.wail(A.wail);
+  initIsles(() => UI.board(Isles.board, localMe()));
+  UI.board(null, localMe());
+  setInterval(() => UI.lock(noLimit ? 0 : lockLeft()), 1000); UI.lock(noLimit ? 0 : lockLeft());
   G.onKill = onKill; G.onMulti = onMulti;
   bindInput();
   await loadAnimals(UI.loading);
@@ -49,6 +55,7 @@ function toggleWail() {
   if (G.mode === 'score' || G.mode === 'free') UI.feed(`慘叫版 <b>${A.wail ? '開' : '關'}</b>`);
 }
 function toMenu() {
+  leaveFree();
   resetRun(); stopAllLoops();
   G.mode = 'menu'; G.paused = false; G.player.pos.set(0, 0, 9999);
   picking = false;
@@ -58,7 +65,9 @@ function toMenu() {
   UI.reset(); UI.hiscore(); UI.show('menu');
 }
 function start(mode) {
-  initAudio(); S.ui(); resetRun();
+  initAudio(); S.ui();
+  if (!noLimit) { const r = tryStart(); if (!r.ok) { if (r.fresh) reportLock(r.until); showLimit(); return; } }
+  resetRun();
   G.mode = mode; G.lastMode = mode; G.paused = false;
   const P = G.player; P.pos.set(0, 0, 24); P.vel.set(0, 0, 0); P.kvel.set(0, 0, 0); P.yaw = 0; P.pitch = 0; P.onGround = true; P.dash = null;
   for (let i = 0; i < 20; i++) spawnRandom(false, [0, 6, 6, 30]);
@@ -88,7 +97,44 @@ function endGame() {
   if (G.stats.newHigh) { try { localStorage.setItem('cozy-payback-hi', Math.floor(G.score)); } catch (e) { /* 忽略 */ } }
   G.camera.children.forEach((c) => (c.visible = false));
   S.end(); UI.end(G.stats);
+  if (mode === 'score') { endRound('score', 180); finishRound('score'); }
 }
+
+// ── v1.3：成績回傳、稱號、防沉迷、回群島 ──
+const noLimit = debug && !location.search.includes('limit');
+function localMe() {
+  let m = null; try { m = JSON.parse(localStorage.getItem('cozy-payback-me') || 'null'); } catch (e) { /* 忽略 */ }
+  return m && m.plays ? Object.assign({ name: '你（這台電腦）', me: true }, m) : null;
+}
+// 一局算完：累計＋稱號 → 結算卡、存本機、送回群島
+function finishRound(mode) {
+  const st = G.stats, fav = UI.favOf(st), score = Math.floor(G.score);
+  const r = { mode, score, kills: G.kills, combo: G.bestCombo, fav, rank: mode === 'score' ? UI.rankOf(score) : '', secs: Math.round(G.elapsed) };
+  const b = Isles.board, mine = (b && b.rows.find((x) => x.me)) || localMe() || { kills: 0, plays: 0, best: 0, combo: 0 };
+  const tot = { kills: mine.kills + r.kills, plays: mine.plays + 1, best: Math.max(mine.best, mode === 'score' ? score : 0), combo: Math.max(mine.combo, r.combo) };
+  tot.top = !!b && b.rows.length > 1 && b.rows.every((x) => x.me || x.best < tot.best);
+  const t = titleFor(r, tot); r.title = t.title; r.blurb = t.blurb;
+  try { localStorage.setItem('cozy-payback-me', JSON.stringify(Object.assign({}, tot, { title: t.title, blurb: t.blurb, fav, rank: r.rank }))); } catch (e) { /* 忽略 */ }
+  UI.meCard(t, tot);
+  if (!reportRound(r)) UI.board(null, localMe());
+  return t;
+}
+// 離開無限發洩（回選單、回群島、被踢）：也算一局
+function leaveFree() {
+  if (G.mode !== 'free' || G.elapsed < 10) return;
+  endRound('free', G.elapsed); finishRound('free'); G.mode = 'menu';
+}
+function showLimit() {
+  stopAllLoops(); G.input.fire = false;
+  if (document.pointerLockElement) document.exitPointerLock();
+  UI.lock(lockLeft()); UI.show('limit'); S.end();
+}
+// 無限發洩玩到等於兩場：當場請回島上
+function kickFree() {
+  finishRound('free'); const until = lockNow(); reportLock(until);
+  G.mode = 'end'; G.camera.children.forEach((c) => (c.visible = false)); showLimit();
+}
+function goIsles() { leaveFree(); backToIsles(); }
 
 // ── 計分 ──
 function onKill(a, mode, info) {
@@ -144,6 +190,7 @@ function bindInput() {
     else if (e.code === 'KeyC') toggleWail();
     else if (e.code === 'KeyB' && !G.boss && !G.paused && bossCallT <= 0) { bossCallT = 20; const b = spawnBoss(); UI.announce('你把老闆叫出來了', `巨大化的${b.def.name}`, true); } // 彩蛋
     else if (e.code === 'KeyP') { if (document.pointerLockElement) document.exitPointerLock(); pause(); }
+    else if (e.code === 'KeyH') goIsles();
     else if (e.code === 'KeyT' && G.mode === 'score' && debug) G.timeLeft = 3;
   });
   addEventListener('keyup', (e) => { keys[e.code] = false; });
@@ -221,6 +268,7 @@ function update(dt) {
   if (G.combo > 0) { G.comboT -= dt; if (G.comboT <= 0) G.combo = 0; }
   UI.update();
   if (G.mode === 'score') { G.timeLeft -= dt; if (G.timeLeft <= 0) endGame(); }
+  else if (G.mode === 'free' && !noLimit && (G.elapsed % 1) < dt && freeOver(G.elapsed)) kickFree();
 }
 function tick(dt) {
   if (G.mode === 'menu' || G.mode === 'end') {
@@ -244,7 +292,7 @@ window.GAME = {
   step(n = 60, dt = 1 / 60) { for (let i = 0; i < n; i++) tick(dt); },
   fire(on) { G.input.fire = on; if (on) G.input.firePressed = true; },
   aim(a) { const P = G.player, c = a.root.position, dx = c.x - P.pos.x, dy = c.y + a.H * 0.5 - (P.pos.y + 1.72), dz = c.z - P.pos.z; P.yaw = Math.atan2(-dx, -dz); P.pitch = Math.atan2(dy, Math.hypot(dx, dz)); },
-  give, strike, weather: setWeather, A, openPicker, pickPower, ult,
+  give, strike, weather: setWeather, A, openPicker, pickPower, ult, resetLimit, Isles, finishRound, kickFree,
   near() { const P = G.player.pos; let b = null, bd = 1e9; for (const a of G.animals) { const d = a.root.position.distanceToSquared(P); if (d < bd) { bd = d; b = a; } } return b; },
 };
 
